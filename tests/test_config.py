@@ -1,5 +1,11 @@
-from src.config import ImportConfig, ReimportConfig
+from src.config import BaseConfig, ImportConfig, ReimportConfig
 
+def test_base_config():
+    name = "import_config"
+
+    base_config = BaseConfig(name='import_config')
+
+    assert base_config.name == name
 
 def test_import_config():
     ocr_engine = "google_vision"
