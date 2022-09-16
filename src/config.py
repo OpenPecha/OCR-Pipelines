@@ -1,7 +1,5 @@
 class BaseConfig:
-
-    def __init__(self, name:str) -> None:
-        self.name = name
+    pass
 class ImportConfig(BaseConfig):
 
     def __init__(self, ocr_engine: str, model_type: str = None) -> None:
