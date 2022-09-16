@@ -7,5 +7,7 @@ class ImportConfig:
 
 
 class ReimportConfig:
-    pass
+    
+    def __init__(self, formatter_type: str) -> None:
+        self.formatter_type = formatter_type
     

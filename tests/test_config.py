@@ -1,4 +1,4 @@
-from src.config import ImportConfig
+from src.config import ImportConfig, ReimportConfig
 
 
 def test_import_config():
@@ -11,3 +11,9 @@ def test_import_config():
     assert import_config.model_type == model_type
     
 
+def test_reimport_config():
+    formatter_type = "namsel_ocr"
+
+    reimport_config = ReimportConfig(formatter_type="namsel_ocr")
+
+    assert reimport_config.formatter_type == formatter_type
