@@ -1,10 +1,19 @@
 class BaseConfig:
-    def __init__(self, formatter_type: str) -> None:
-        self.formatter_type = formatter_type
+
+    def __init__(self, ocr_engine: str) -> None:
+        self.ocr_engine = ocr_engine
 
 class ImportConfig(BaseConfig):
 
-    def __init__(self, formatter_type: str, ocr_engine: str, model_type: str = None) -> None:
-        super().__init__(formatter_type=formatter_type)
-        self.ocr_engine = ocr_engine
+    def __init__(self, ocr_engine: str, model_type: str = None) -> None:
+        super().__init__(ocr_engine=ocr_engine)
         self.model_type = model_type
+
+class ReimportConfig(BaseConfig):
+
+    def __init__(self, ocr_engine: str) -> None:
+        super().__init__(ocr_engine=ocr_engine)
+
+GOOGLE_VISION_PARSER_LINK = ""
+GOOGLE_HOCR_PARSER_LINK = ""
+NAMSEL_PARSER_LINK = ""
