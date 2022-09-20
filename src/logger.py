@@ -1,8 +1,6 @@
 import logging
 
 
-from src.config import BaseConfig
-
 class Logger:
     
     def __init__(self, log_file_path: str) -> None:
