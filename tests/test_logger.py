@@ -1,6 +1,5 @@
 from pathlib import Path
 
-from src.config import ImportConfig
 from src.logger import Logger
 
 def test_ocr_status_logger():
