@@ -19,7 +19,7 @@ class OCRParser:
     def parse(self):
         try:
             formatter_class = self.parsers_register[self.config.ocr_engine]
-        except OCREngineNotSupported:
+        except Exception:
             raise OCREngineNotSupported(
                 f'{self.config.ocr_engine} not supported. Please select from {PARSERS_REGISTER.keys()}'
             )

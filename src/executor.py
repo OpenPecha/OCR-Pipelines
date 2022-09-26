@@ -91,14 +91,15 @@ ENGINE_REGISTER = {
 
 class OCRExecutor:
 
-    def __init__(self, images_base_dir : Path, config : ImportConfig, ocr_base_dir : Path) -> None:
+    def __init__(self, images_base_dir : Path, config : ImportConfig, ocr_base_dir : Path, engine_register=ENGINE_REGISTER) -> None:
         self.images_base_dir = images_base_dir
         self.config = config
         self.ocr_base_dir= ocr_base_dir
+        self.engine_register = engine_register
 
     
     def run(self):
-        ocr_engine_class = ENGINE_REGISTER[self.config.ocr_engine]
+        ocr_engine_class = self.engine_register[self.config.ocr_engine]
         ocr_engine = ocr_engine_class(self.images_base_dir, self.config, self.ocr_base_dir)
         ocr_output_path = ocr_engine.run()
         return ocr_output_path

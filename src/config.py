@@ -5,9 +5,10 @@ class BaseConfig:
 
 class ImportConfig(BaseConfig):
 
-    def __init__(self, ocr_engine: str, model_type: str = None) -> None:
+    def __init__(self, ocr_engine: str, model_type: str = None, lang_hint: str=None) -> None:
         super().__init__(ocr_engine=ocr_engine)
         self.model_type = model_type
+        self.lang_hint = lang_hint
 
 class ReimportConfig(BaseConfig):
 
@@ -17,3 +18,5 @@ class ReimportConfig(BaseConfig):
 GOOGLE_VISION_PARSER_LINK = ""
 GOOGLE_HOCR_PARSER_LINK = ""
 NAMSEL_PARSER_LINK = ""
+
+BATCH_PREFIX = "batch"
