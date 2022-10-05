@@ -3,7 +3,6 @@ import tempfile
 from pathlib import Path
 
 
-from openpecha.blupdate import update_pecha
 from openpecha.core.pecha import OpenPechaFS
 from openpecha.utils import download_pecha, download_pecha_asset
 
@@ -13,6 +12,7 @@ from .image_downloader import BDRCImageDownloader
 from .logger import Logger
 from .parser import OCRParser
 from .upload import save_to_s3, publish_pecha
+from .update_pecha import update_pecha
 
 
 
@@ -46,6 +46,6 @@ def reimport_pipeline(pecha_id: str, config: ReimportConfig):
         old_pecha = download_pecha(pecha_id)
         new_pecha = OpenPechaFS(pecha_path)
         
-        updated_pecha = update_pecha(old_pecha, new_pecha)
+        updated_pecha = update_pecha(pecha_id, old_pecha, new_pecha.opf_path)
         
         publish_pecha(pecha_path=updated_pecha, asset_path=ocr_output_path, asset_name="ocr_output")
