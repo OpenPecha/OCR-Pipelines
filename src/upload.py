@@ -2,12 +2,9 @@ import boto3
 import botocore
 import hashlib
 import os
-import shutil
 
 from pathlib import Path
 from openpecha.core.pecha import OpenPechaFS
-from openpecha.github_utils import create_release
-from openpecha.utils import load_yaml
 
 OCR_OUTPUT_BUCKET = "ocr.bdrc.io"
 S3 = boto3.resource("s3")
@@ -59,13 +56,9 @@ def save_to_s3(asset_base_dir:Path, asset_name:str="ocr_output"):
             ocr_output_bucket.put_object(Key=s3_output_path, Body=ocr_output_file.read_bytes())
 
 
-def publish_pecha(pecha_path:Path, asset_path:Path, asset_name:str="ocr_output"):
-    pecha_id = pecha_path.stem
-    pecha = OpenPechaFS(pecha_id=pecha_id, path=pecha_path)
-    pecha.publish(asset_path=asset_path, asset_name=asset_name)
-
-
 if __name__ == "__main__":
     pecha_path = Path.home() / "esukhia/data/opf/I1AF6985A"
     asset_path = Path.home() / "esukhia/data/ocr_output/WA00KG0614"
-    publish_pecha(pecha_path=pecha_path, asset_path=asset_path)
+    pecha_id = pecha_path.stem
+    pecha = OpenPechaFS(pecha_id=pecha_id, path=pecha_path)
+    pecha.publish(asset_path=asset_path, asset_name="ocr_output")

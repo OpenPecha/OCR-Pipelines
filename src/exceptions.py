@@ -3,3 +3,6 @@ class OCREngineNotSupported(Exception):
 
 class ImageGroupNotFound(Exception):
     pass
+
+class DataProviderNotSupported(Exception):
+    pass
