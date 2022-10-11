@@ -1,5 +1,6 @@
 import gzip
 import io
+import os
 import json
 
 from google.cloud import vision
@@ -65,9 +66,9 @@ class GoogleVisionEngine:
         img_group_paths = list(self.images_base_dir.iterdir())
         img_group_paths.sort()
         for img_group_path in img_group_paths:
-            ocr_output_dir = self.ocr_base_dir / work_id / img_group_id
-            ocr_output_dir.mkdir(exist_ok=True, parents=True)
             img_group_id = img_group_path.name
+            ocr_output_dir = self.ocr_base_dir / work_id / f"{work_id}-{img_group_id}"
+            ocr_output_dir.mkdir(exist_ok=True, parents=True)
             img_paths = list(img_group_path.iterdir())
             img_paths.sort()
             for img_path in img_paths:
