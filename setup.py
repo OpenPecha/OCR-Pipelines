@@ -22,6 +22,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "openpecha>=0.9.0, <1.0.0",
+        "Pillow>9.0.0, <=10.0.0"
     ],
     python_requires=">=3.7",
 )
