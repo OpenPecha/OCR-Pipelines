@@ -7,7 +7,7 @@ from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
 from pathlib import Path
 
-from src.config import ImportConfig
+from ocr_pipelines.config import ImportConfig
 
 def gzip_str(string_):
     # taken from https://gist.github.com/Garrett-R/dc6f08fc1eab63f94d2cbb89cb61c33d

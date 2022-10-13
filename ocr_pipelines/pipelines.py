@@ -6,13 +6,12 @@ from pathlib import Path
 from openpecha.core.pecha import OpenPechaFS
 from openpecha.utils import download_pecha_assets
 
-from src.config import ImportConfig, ReimportConfig
-from src.executor import OCRExecutor
-from src.image_downloader import BDRCImageDownloader
-from src.logger import Logger
-from src.parser import OCRParser
-from src.upload import save_to_s3
-from src.update_pecha import update_pecha
+from ocr_pipelines.config import ImportConfig, ReimportConfig
+from ocr_pipelines.executor import OCRExecutor
+from ocr_pipelines.image_downloader import BDRCImageDownloader
+from ocr_pipelines.parser import OCRParser
+from ocr_pipelines.upload import save_to_s3
+from ocr_pipelines.update_pecha import update_pecha
 
 
 

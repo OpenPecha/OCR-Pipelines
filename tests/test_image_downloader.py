@@ -2,7 +2,7 @@ import tempfile
 
 from pathlib import Path
 
-from src.image_downloader import BDRCImageDownloader
+from ocr_pipelines.image_downloader import BDRCImageDownloader
 
 def mock_get_image_groups():
     return {'I0001': 'wwww.google.com'}

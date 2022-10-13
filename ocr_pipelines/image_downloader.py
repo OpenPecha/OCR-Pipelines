@@ -13,7 +13,7 @@ from rdflib import URIRef
 from rdflib.namespace import Namespace, NamespaceManager
 from wand.image import Image as WandImage
 
-from src.exceptions import ImageGroupNotFound
+from ocr_pipelines.exceptions import ImageGroupNotFound
 
 ARCHIVE_BUCKET = "archive.tbrc.org"
 S3 = boto3.resource("s3")

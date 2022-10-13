@@ -1,4 +1,4 @@
-from src.config import ReimportConfig, ImportConfig
+from ocr_pipelines.config import ReimportConfig, ImportConfig
 
 def test_base_config():
     ocr_engine = "google_vision"
