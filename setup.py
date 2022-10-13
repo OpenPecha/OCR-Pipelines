@@ -21,7 +21,7 @@ setup(
     url="https://github.com/OpenPecha/OCR-Pipelines/",
     packages=find_packages(),
     install_requires=[
-        "openpecha>=0.9.3, <1.0",
+        "openpecha>=0.9.0, <1.0",
     ],
     python_requires=">=3.7",
 )
