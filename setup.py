@@ -1,4 +1,27 @@
-from setuptools import setup
+from pathlib import Path
 
-if __name__ == "__main__":
-    setup()
+from setuptools import find_packages, setup
+
+
+def read(fname):
+    p = Path(__file__).parent / fname
+    with p.open(encoding="utf-8") as f:
+        return f.read()
+
+
+setup(
+    name="openpecha",
+    version="v.0.0.0",
+    author="Esukhia developers",
+    author_email="esukhiadev@gmail.com",
+    description="Ocr pipelines has importing bdrc work to opf and reimporting ocred opf",
+    long_description=read("README.md"),
+    long_description_content_type="text/markdown",
+    license="Apache2",
+    url="https://github.com/OpenPecha/OCR-Pipelines/",
+    packages=find_packages(),
+    install_requires=[
+        "openpecha>=0.9.3, <1.0",
+    ],
+    python_requires=">=3.7",
+)
