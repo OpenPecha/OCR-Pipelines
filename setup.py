@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name="ocr_pipelines",
-    version="v.0.0.0",
+    version="0.0.1",
     author="Esukhia developers",
     author_email="esukhiadev@gmail.com",
     description="Ocr pipelines has importing bdrc work to opf and reimporting ocred opf",
