@@ -1,3 +1,5 @@
+from pathlib import Path
+
 from ocr_pipelines.config import ReimportConfig, ImportConfig
 
 def test_base_config():
@@ -15,3 +17,5 @@ def test_import_config():
 
     assert import_config.ocr_engine == ocr_engine
     assert import_config.model_type == model_type
+    assert import_config.ocr_output_base_dir == Path().home()
+    assert import_config.img_download_base_dir == Path().home()

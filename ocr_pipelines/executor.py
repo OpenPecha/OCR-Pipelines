@@ -22,11 +22,11 @@ def gzip_str(string_):
 
 class GoogleVisionEngine:
 
-    def __init__(self, images_base_dir: Path, config: ImportConfig, ocr_base_dir: Path) -> None:
-        self.images_base_dir = images_base_dir
+    def __init__(self,config: ImportConfig, image_download_dir) -> None:
+        self.image_download_dir = image_download_dir
         self.model_type = config.model_type
         self.lang_hint = config.lang_hint
-        self.ocr_base_dir = ocr_base_dir
+        self.ocr_output_base_dir = config.ocr_output_base_dir
         self.vision_client = vision.ImageAnnotatorClient()
 
     def google_ocr(self, image):
@@ -62,12 +62,12 @@ class GoogleVisionEngine:
         return response
 
     def run(self):
-        work_id = self.images_base_dir.name
-        img_group_paths = list(self.images_base_dir.iterdir())
+        work_id = self.image_download_dir.name
+        img_group_paths = list(self.image_download_dir.iterdir())
         img_group_paths.sort()
         for img_group_path in img_group_paths:
             img_group_id = img_group_path.name
-            ocr_output_dir = self.ocr_base_dir / work_id / f"{work_id}-{img_group_id}"
+            ocr_output_dir = self.ocr_output_base_dir / work_id / f"{work_id}-{img_group_id}"
             ocr_output_dir.mkdir(exist_ok=True, parents=True)
             img_paths = list(img_group_path.iterdir())
             img_paths.sort()
@@ -84,7 +84,7 @@ class GoogleVisionEngine:
                 gzip_result = gzip_str(result)
                 result_fn.write_bytes(gzip_result)
 
-        return self.ocr_base_dir / work_id
+        return self.ocr_output_base_dir / work_id
 
 ENGINE_REGISTER = {
     'google_vision': GoogleVisionEngine
@@ -92,15 +92,14 @@ ENGINE_REGISTER = {
 
 class OCRExecutor:
 
-    def __init__(self, images_base_dir : Path, config : ImportConfig, ocr_base_dir : Path, engine_register=ENGINE_REGISTER) -> None:
-        self.images_base_dir = images_base_dir
+    def __init__(self, config : ImportConfig, image_download_dir: Path, engine_register=ENGINE_REGISTER) -> None:
         self.config = config
-        self.ocr_base_dir= ocr_base_dir
+        self.image_download_dir = image_download_dir
         self.engine_register = engine_register
 
     
     def run(self):
         ocr_engine_class = self.engine_register[self.config.ocr_engine]
-        ocr_engine = ocr_engine_class(self.images_base_dir, self.config, self.ocr_base_dir)
+        ocr_engine = ocr_engine_class(self.config, self.image_download_dir)
         ocr_output_path = ocr_engine.run()
         return ocr_output_path

@@ -15,12 +15,12 @@ from ocr_pipelines.update_pecha import update_pecha
 
 
 
-def import_pipeline(work_id: str, config: ImportConfig, img_download_dir: Path, ocr_base_dir:Path):
+def import_pipeline(work_id: str, config: ImportConfig):
 
-    downloader = BDRCImageDownloader(work_id=work_id, output_dir=img_download_dir)
-    images_base_dir = downloader.download_images()
+    downloader = BDRCImageDownloader(work_id=work_id, output_dir=config.img_download_base_dir)
+    images_download_dir = downloader.download_images()
 
-    ocr_executor = OCRExecutor(images_base_dir=images_base_dir, config=config, ocr_base_dir=ocr_base_dir)
+    ocr_executor = OCRExecutor(config=config, image_download_dir=images_download_dir)
     ocr_output_path = ocr_executor.run()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -53,5 +53,5 @@ if __name__ == "__main__":
     work_id = "W8LS68000"
     config = ImportConfig(ocr_engine="google_vision", model_type="builtin/weekly")
     img_download_dir = Path('./data/images/')
-    ocr_base_dir = Path('./data/ocr_outputs')
-    import_pipeline(work_id = work_id, config=config, img_download_dir=img_download_dir, ocr_base_dir=ocr_base_dir)
+    ocr_output_base_dir = Path('./data/ocr_outputs')
+    import_pipeline(work_id = work_id, config=config, img_download_dir=img_download_dir, ocr_output_base_dir=ocr_output_base_dir)

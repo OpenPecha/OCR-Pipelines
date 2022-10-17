@@ -8,11 +8,11 @@ from ocr_pipelines.executor import OCRExecutor
 
 class MockGoogleOCREngine:
 
-    def __init__(self, images_base_dir: Path, config: ImportConfig, ocr_base_dir: Path) -> None:
-        self.images_base_dir = images_base_dir
+    def __init__(self, config: ImportConfig, image_download_dir) -> None:
+        self.image_download_dir = image_download_dir
         self.model_type = config.model_type
         self.lang_hint = config.lang_hint
-        self.ocr_base_dir = ocr_base_dir
+        self.ocr_output_base_dir = config.ocr_output_base_dir
 
     def run(self):
         return Path.home()
@@ -23,15 +23,15 @@ ENGINE_REGISTER = {
 
 
 def test_executor_with_google_vision():
-    images_base_dir = Path('./')
+    image_download_dir = Path('./')
     import_config = ImportConfig(
         ocr_engine="mock_google_vision",
         model_type="weekly-inbuit"
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        ocr_base_dir = Path(tmpdirname)
-        ocr_executor = OCRExecutor(images_base_dir=images_base_dir, config=import_config, ocr_base_dir=ocr_base_dir, engine_register=ENGINE_REGISTER)
+        ocr_output_base_dir = Path(tmpdirname)
+        ocr_executor = OCRExecutor(config=import_config, image_download_dir=image_download_dir, engine_register=ENGINE_REGISTER)
         ocr_output_path = ocr_executor.run()
     
 
