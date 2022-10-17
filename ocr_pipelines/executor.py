@@ -1,6 +1,5 @@
 import gzip
 import io
-import os
 import json
 
 from google.cloud import vision

@@ -1,6 +1,5 @@
 import shutil
 
-from openpecha.core.pecha import OpenPechaFS
 from openpecha.blupdate import update_single_base
 
 def clean_dir(dir):

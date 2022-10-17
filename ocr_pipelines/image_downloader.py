@@ -1,4 +1,3 @@
-from typing import Callable
 import boto3
 import botocore
 import hashlib
