@@ -1,12 +1,13 @@
 import gzip
 import io
 import json
+from pathlib import Path
 
 from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
-from pathlib import Path
 
 from ocr_pipelines.config import ImportConfig
+
 
 def gzip_str(string_):
     # taken from https://gist.github.com/Garrett-R/dc6f08fc1eab63f94d2cbb89cb61c33d
@@ -20,8 +21,7 @@ def gzip_str(string_):
 
 
 class GoogleVisionEngine:
-
-    def __init__(self,config: ImportConfig, image_download_dir) -> None:
+    def __init__(self, config: ImportConfig, image_download_dir) -> None:
         self.image_download_dir = image_download_dir
         self.model_type = config.model_type
         self.lang_hint = config.lang_hint
@@ -34,7 +34,7 @@ class GoogleVisionEngine:
         return: google ocr response in Json
         """
         if isinstance(image, (str, Path)):
-            with io.open(image, "rb") as image_file:
+            with open(image, "rb") as image_file:
                 content = image_file.read()
         else:
             content = image
@@ -61,12 +61,16 @@ class GoogleVisionEngine:
         return response
 
     def run(self):
-        work_id = self.image_download_dir.name
+        bdrc_scan_id = self.image_download_dir.name
         img_group_paths = list(self.image_download_dir.iterdir())
         img_group_paths.sort()
         for img_group_path in img_group_paths:
             img_group_id = img_group_path.name
-            ocr_output_dir = self.ocr_output_base_dir / work_id / f"{work_id}-{img_group_id}"
+            ocr_output_dir = (
+                self.ocr_output_base_dir
+                / bdrc_scan_id
+                / f"{bdrc_scan_id}-{img_group_id}"
+            )
             ocr_output_dir.mkdir(exist_ok=True, parents=True)
             img_paths = list(img_group_path.iterdir())
             img_paths.sort()
@@ -76,27 +80,30 @@ class GoogleVisionEngine:
                     continue
                 try:
                     result = self.google_ocr(str(img_path))
-                except:
+                except Exception:
                     print(f"Google OCR issue: {result_fn}")
                     continue
                 result = json.dumps(result)
                 gzip_result = gzip_str(result)
                 result_fn.write_bytes(gzip_result)
 
-        return self.ocr_output_base_dir / work_id
+        return self.ocr_output_base_dir / bdrc_scan_id
 
-ENGINE_REGISTER = {
-    'google_vision': GoogleVisionEngine
-}
+
+ENGINE_REGISTER = {"google_vision": GoogleVisionEngine}
+
 
 class OCRExecutor:
-
-    def __init__(self, config : ImportConfig, image_download_dir: Path, engine_register=ENGINE_REGISTER) -> None:
+    def __init__(
+        self,
+        config: ImportConfig,
+        image_download_dir: Path,
+        engine_register=ENGINE_REGISTER,
+    ) -> None:
         self.config = config
         self.image_download_dir = image_download_dir
         self.engine_register = engine_register
 
-    
     def run(self):
         ocr_engine_class = self.engine_register[self.config.ocr_engine]
         ocr_engine = ocr_engine_class(self.config, self.image_download_dir)

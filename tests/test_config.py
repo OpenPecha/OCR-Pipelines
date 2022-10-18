@@ -1,6 +1,7 @@
 from pathlib import Path
 
-from ocr_pipelines.config import ReimportConfig, ImportConfig
+from ocr_pipelines.config import ImportConfig, ReimportConfig
+
 
 def test_base_config():
     ocr_engine = "google_vision"
@@ -8,6 +9,8 @@ def test_base_config():
     reimport_config = ReimportConfig(ocr_engine=ocr_engine)
 
     assert reimport_config.ocr_engine == ocr_engine
+    assert reimport_config.ocr_output_base_dir == Path().home()
+
 
 def test_import_config():
     ocr_engine = "google_vision"
