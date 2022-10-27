@@ -1,42 +1,41 @@
 from pathlib import Path
 
-DEFAULT_IMAGE_DOWNLOAD_BASE_DIR = Path().home()
+# setup paths
+DATA_PATH = Path.home() / ".ocr_pipelines_data"
 
-DEFAULT_OCR_OUTPUT_BASE_DIR = Path().home()
+IMAGES_PATH = DATA_PATH / "images"
+OCR_OUTPUTS_PATH = DATA_PATH / "ocr_outputs"
+
+# Constants
+GOOGLE_VISION_PARSER_LINK = ""
+GOOGLE_HOCR_PARSER_LINK = ""
+NAMSEL_PARSER_LINK = ""
+BATCH_PREFIX = "batch"
 
 
 class BaseConfig:
-    def __init__(
-        self, ocr_engine: str, ocr_output_base_dir: Path = DEFAULT_OCR_OUTPUT_BASE_DIR
-    ) -> None:
-        self.ocr_engine = ocr_engine
-        self.ocr_output_base_dir = ocr_output_base_dir
+    pass
 
 
 class ImportConfig(BaseConfig):
     def __init__(
         self,
         ocr_engine: str,
-        ocr_output_base_dir: Path = DEFAULT_OCR_OUTPUT_BASE_DIR,
-        img_download_base_dir: Path = DEFAULT_IMAGE_DOWNLOAD_BASE_DIR,
         model_type: str = "",
         lang_hint: str = "",
+        img_download_base_dir: Path = IMAGES_PATH,
+        ocr_output_base_dir: Path = OCR_OUTPUTS_PATH,
     ) -> None:
-        super().__init__(ocr_engine=ocr_engine, ocr_output_base_dir=ocr_output_base_dir)
+        self.ocr_engine = ocr_engine
         self.model_type = model_type
         self.lang_hint = lang_hint
         self.img_download_base_dir = img_download_base_dir
+        self.ocr_output_base_dir = ocr_output_base_dir
 
 
 class ReimportConfig(BaseConfig):
     def __init__(
-        self, ocr_engine: str, ocr_output_base_dir: Path = DEFAULT_OCR_OUTPUT_BASE_DIR
+        self, ocr_engine: str, ocr_output_base_dir: Path = OCR_OUTPUTS_PATH
     ) -> None:
-        super().__init__(ocr_engine=ocr_engine, ocr_output_base_dir=ocr_output_base_dir)
-
-
-GOOGLE_VISION_PARSER_LINK = ""
-GOOGLE_HOCR_PARSER_LINK = ""
-NAMSEL_PARSER_LINK = ""
-
-BATCH_PREFIX = "batch"
+        self.ocr_engine = ocr_engine
+        self.ocr_output_base_dir = ocr_output_base_dir
