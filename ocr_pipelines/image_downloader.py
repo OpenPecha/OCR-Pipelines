@@ -1,14 +1,13 @@
-from typing import Callable
-import boto3
-import botocore
 import hashlib
 import io
 import logging
-import requests
-import rdflib
-
-from PIL import Image as PillowImage
 from pathlib import Path
+
+import boto3
+import botocore
+import rdflib
+import requests
+from PIL import Image as PillowImage
 from rdflib import URIRef
 from rdflib.namespace import Namespace, NamespaceManager
 from wand.image import Image as WandImage
@@ -35,38 +34,38 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 
-
-
 class BDRCImageDownloader:
-
-    def __init__(self, work_id : str, output_dir: Path) -> None:
-        self.work_id = work_id
+    def __init__(self, bdrc_scan_id: str, output_dir: Path) -> None:
+        self.bdrc_scan_id = bdrc_scan_id
         self.output_dir = output_dir
 
-    
     def get_image_groups(self):
         image_groups = {}
         try:
             r = requests.get(
-                f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.work_id}&format=json&pageSize=500"
+                f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
             )
         except Exception:
-            raise ImageGroupNotFound(f"Volume Info Error: No info found for Work {self.work_id}: status code: {r.status_code}")
+            raise ImageGroupNotFound(
+                f"Volume Info Error: No info found for Work {self.bdrc_scan_id}: status code: {r.status_code}"
+            )
         res = r.json()
         for b in res["results"]["bindings"]:
             image_group_url = NSM.qname(URIRef(b["volid"]["value"]))
             image_group_id = image_group_url[4:]
             image_groups[image_group_id] = image_group_url
         return image_groups
-    
-    def get_s3_prefix_path(self, image_group_id, service_id=None, batch_id=None, data_types=None):
+
+    def get_s3_prefix_path(
+        self, image_group_id, service_id=None, batch_id=None, data_types=None
+    ):
         """
         the input is like W22084, I0886. The output is an s3 prefix ("folder"), the function
         can be inspired from
         https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
         which is documented
         """
-        md5 = hashlib.md5(str.encode(self.work_id))
+        md5 = hashlib.md5(str.encode(self.bdrc_scan_id))
         two = md5.hexdigest()[:2]
 
         pre, rest = image_group_id[0], image_group_id[1:]
@@ -75,15 +74,15 @@ class BDRCImageDownloader:
         else:
             suffix = image_group_id
 
-        base_dir = f"Works/{two}/{self.work_id}"
+        base_dir = f"Works/{two}/{self.bdrc_scan_id}"
         if service_id is not None:
             batch_dir = f"{base_dir}/{service_id}/{batch_id}"
             paths = {BATCH_PREFIX: batch_dir}
             for dt in data_types:
-                paths[dt] = f"{batch_dir}/{dt}/{self.work_id}-{suffix}"
+                paths[dt] = f"{batch_dir}/{dt}/{self.bdrc_scan_id}-{suffix}"
             return paths
-        return f"{base_dir}/images/{self.work_id}-{suffix}"
-    
+        return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
+
     def get_s3_image_list(self, image_group_url):
         """
         returns the content of the dimension.json file for a volume ID, accessible at:
@@ -96,7 +95,7 @@ class BDRCImageDownloader:
             )
             return {}
         return r.json()
-    
+
     def image_exists_locally(self, origfilename, imagegroup_output_dir):
         if origfilename.endswith(".tif"):
             output_fn = imagegroup_output_dir / f'{origfilename.split(".")[0]}.png'
@@ -107,7 +106,7 @@ class BDRCImageDownloader:
             if output_fn.is_file():
                 return True
         return False
-    
+
     def get_s3_bits(self, s3path, bucket):
         """
         get the s3 binary data in memory
@@ -122,17 +121,17 @@ class BDRCImageDownloader:
             else:
                 raise
         return
-    
+
     def save_with_wand(self, bits, output_fn):
         try:
             with WandImage(blob=bits.getvalue()) as img:
                 img.format = "png"
                 img.save(filename=str(output_fn))
-        except Exception as e:
+        except Exception:
             logger.exception(
                 f"Error in saving: {output_fn} : origfilename: {output_fn.name}"
             )
-    
+
     def save_file(self, bits, origfilename, imagegroup_output_dir):
         """
         uses pillow to interpret the bits as an image and save as a format
@@ -146,7 +145,7 @@ class BDRCImageDownloader:
             return
         try:
             img = PillowImage.open(bits)
-        except Exception as e:
+        except Exception:
             if bits.getvalue():
                 self.save_with_wand(bits, output_fn)
             else:
@@ -155,7 +154,7 @@ class BDRCImageDownloader:
 
         try:
             img.save(str(output_fn))
-        except:
+        except Exception:
             del img
             self.save_with_wand(bits, output_fn)
 
@@ -171,16 +170,13 @@ class BDRCImageDownloader:
             if filebits:
                 self.save_file(filebits, imageinfo["filename"], img_group_dir)
 
-    
     def download_images(self):
-        (self.output_dir / self.work_id).mkdir(exist_ok=True, parents=True)
-        image_output_dir = (self.output_dir / self.work_id)
+        (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
+        image_output_dir = self.output_dir / self.bdrc_scan_id
         image_groups = self.get_image_groups()
         for img_group_id, img_group_url in image_groups.items():
             (image_output_dir / img_group_id).mkdir(exist_ok=True, parents=True)
-            img_group_dir = (image_output_dir / img_group_id)
+            img_group_dir = image_output_dir / img_group_id
             self.save_image_group(img_group_id, img_group_url, img_group_dir)
 
         return image_output_dir
-
-        
