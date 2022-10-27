@@ -2,11 +2,17 @@ import gzip
 import io
 import json
 from pathlib import Path
+from typing import Union
 
 from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
+from google.oauth2.service_account import Credentials
 
 from ocr_pipelines.config import ImportConfig
+
+ImagePath = Union[str, Path]
+ImageBytes = bytes
+Image = Union[ImagePath, ImageBytes]
 
 
 def gzip_str(string_):
@@ -21,23 +27,42 @@ def gzip_str(string_):
 
 
 class GoogleVisionEngine:
-    def __init__(self, config: ImportConfig, image_download_dir) -> None:
-        self.image_download_dir = image_download_dir
-        self.model_type = config.model_type
-        self.lang_hint = config.lang_hint
-        self.ocr_output_base_dir = config.ocr_output_base_dir
-        self.vision_client = vision.ImageAnnotatorClient()
+    # TODO: remove dirs
 
-    def google_ocr(self, image):
-        """
-        image: file_path or image bytes
-        return: google ocr response in Json
+    def __init__(
+        self,
+        credentials: dict,
+        model_type: str = None,
+        lang_hint: str = None,
+        image_download_dir: Path = Path.home(),
+        ocr_output_base_dir: Path = Path.home(),
+    ) -> None:
+        self.model_type = model_type
+        self.lang_hint = lang_hint
+        self.image_download_dir = image_download_dir
+        self.ocr_output_base_dir = ocr_output_base_dir
+
+        self.credentials = Credentials.from_service_account_info(credentials)
+        self.vision_client = vision.ImageAnnotatorClient(credentials=self.credentials)
+
+    def extract_text(self, image: Image) -> dict:
+        """Run OCR on a single image.
+
+        Args:
+            image: file_path or image bytes
+        Returns:
+            response: ocr response in dict
         """
         if isinstance(image, (str, Path)):
-            with open(image, "rb") as image_file:
-                content = image_file.read()
-        else:
+            image = Path(image)
+            if not image.is_file():
+                raise FileNotFoundError(f"Image file not found: {image}")
+            content = image.read_bytes()
+        elif isinstance(image, bytes):
             content = image
+        else:
+            raise TypeError("image must be a file path or image bytes")
+
         ocr_image = vision.Image(content=content)
 
         features = [
@@ -79,12 +104,12 @@ class GoogleVisionEngine:
                 if result_fn.is_file():
                     continue
                 try:
-                    result = self.google_ocr(str(img_path))
+                    result = self.extract_text(img_path)
                 except Exception:
                     print(f"Google OCR issue: {result_fn}")
                     continue
-                result = json.dumps(result)
-                gzip_result = gzip_str(result)
+                result_json = json.dumps(result)
+                gzip_result = gzip_str(result_json)
                 result_fn.write_bytes(gzip_result)
 
         return self.ocr_output_base_dir / bdrc_scan_id
