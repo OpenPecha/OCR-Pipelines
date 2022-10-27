@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional, Union
 
 # setup paths
 DATA_PATH = Path.home() / ".ocr_pipelines_data"
@@ -12,6 +13,9 @@ GOOGLE_HOCR_PARSER_LINK = ""
 NAMSEL_PARSER_LINK = ""
 BATCH_PREFIX = "batch"
 
+# types
+Credentials = Union[dict, str]
+
 
 class BaseConfig:
     pass
@@ -21,14 +25,17 @@ class ImportConfig(BaseConfig):
     def __init__(
         self,
         ocr_engine: str,
+        *,
         model_type: str = "",
         lang_hint: str = "",
+        credentials: Optional[Credentials] = None,
         img_download_base_dir: Path = IMAGES_PATH,
         ocr_output_base_dir: Path = OCR_OUTPUTS_PATH,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
         self.lang_hint = lang_hint
+        self.credentials = credentials
         self.img_download_base_dir = img_download_base_dir
         self.ocr_output_base_dir = ocr_output_base_dir
 
