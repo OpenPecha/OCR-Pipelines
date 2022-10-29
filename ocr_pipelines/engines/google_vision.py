@@ -1,19 +1,18 @@
 import json
 from pathlib import Path
-from typing import Union
+from typing import List
 
 from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
 from google.oauth2.service_account import Credentials
 
-from ocr_pipelines.engines.base import BaseEngine
+from ocr_pipelines.engines import OcrEngine
+from ocr_pipelines.engines.engine import ImageBytes, ImageType
 
-ImagePath = Union[str, Path]
-ImageBytes = bytes
-Image = Union[ImagePath, ImageBytes]
+GoogleVisionFeatures = List[dict]
 
 
-class GoogleVisionEngine(BaseEngine):
+class GoogleVisionEngine(OcrEngine):
     # TODO: remove dirs
 
     def __init__(
@@ -32,7 +31,51 @@ class GoogleVisionEngine(BaseEngine):
         self.credentials = Credentials.from_service_account_info(credentials)
         self.vision_client = vision.ImageAnnotatorClient(credentials=self.credentials)
 
-    def ocr(self, image: Image) -> dict:
+    @staticmethod
+    def load_image_bytes(image: ImageType) -> ImageBytes:
+        """Load image bytes from image path or image bytes.
+
+        Args:
+            image: file_path or image bytes
+        Returns:
+            image_bytes: image bytes
+
+        Raises:
+            FileNotFoundError: if image path is not found
+            TypeError: if image is not str or Path or bytes
+        """
+        if isinstance(image, (str, Path)):
+            image = Path(image)
+            if not image.is_file():
+                raise FileNotFoundError(f"Image file not found: {image}")
+            return image.read_bytes()
+        elif isinstance(image, ImageBytes):
+            return image
+        else:
+            raise TypeError("image must be a file path or image bytes")
+
+    @property
+    def features(self) -> GoogleVisionFeatures:
+        return [
+            {
+                "type_": vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
+                "model": self.model_type,
+            }
+        ]
+
+    @property
+    def image_context(self) -> dict:
+        image_context = {}
+        if self.lang_hint:
+            image_context["language_hints"] = [self.lang_hint]
+        return image_context
+
+    @staticmethod
+    def response_to_dict(response: AnnotateImageResponse) -> dict:
+        response_json = AnnotateImageResponse.to_json(response)
+        return json.loads(response_json)
+
+    def ocr(self, image: ImageType) -> dict:
         """Run OCR on a single image.
 
         Args:
@@ -40,34 +83,18 @@ class GoogleVisionEngine(BaseEngine):
         Returns:
             response: ocr response in dict
         """
-        if isinstance(image, (str, Path)):
-            image = Path(image)
-            if not image.is_file():
-                raise FileNotFoundError(f"Image file not found: {image}")
-            content = image.read_bytes()
-        elif isinstance(image, bytes):
-            content = image
-        else:
-            raise TypeError("image must be a file path or image bytes")
 
-        ocr_image = vision.Image(content=content)
-
-        features = [
-            {
-                "type_": vision.Feature.Type.DOCUMENT_TEXT_DETECTION,
-                "model": self.model_type,
-            }
-        ]
-
-        image_context = {}
-        if self.lang_hint:
-            image_context["language_hints"] = [self.lang_hint]
+        image_bytes = self.load_image_bytes(image)
+        ocr_image = vision.Image(content=image_bytes)
 
         response = self.vision_client.annotate_image(
-            {"image": ocr_image, "features": features, "image_context": image_context}
+            {
+                "image": ocr_image,
+                "features": self.features,
+                "image_context": self.image_context,
+            }
         )
 
-        response_json = AnnotateImageResponse.to_json(response)
-        response = json.loads(response_json)
+        response_dict = self.response_to_dict(response)
 
-        return response
+        return response_dict

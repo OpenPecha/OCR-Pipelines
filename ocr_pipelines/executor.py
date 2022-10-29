@@ -4,7 +4,8 @@ import json
 from pathlib import Path
 
 from ocr_pipelines.config import ImportConfig
-from ocr_pipelines.engines import BaseEngine, ocr_engine_class_register
+from ocr_pipelines.engines import register as ocr_engine_class_register
+from ocr_pipelines.engines.engine import OcrEngine
 from ocr_pipelines.engines.google_vision import GoogleVisionEngine
 from ocr_pipelines.exceptions import OCREngineNotSupported
 
@@ -29,7 +30,7 @@ class OCRExecutor:
         self.config = config
         self.image_download_dir = image_download_dir
 
-    def get_ocr_engine(self) -> BaseEngine:
+    def get_ocr_engine(self) -> OcrEngine:
         ocr_engine_class = ocr_engine_class_register.get(self.config.ocr_engine)
         if ocr_engine_class == GoogleVisionEngine:
             ocr_engine = ocr_engine_class(
