@@ -8,12 +8,18 @@ import pytest
 from ocr_pipelines.engines import GoogleVisionEngine
 
 
-@mock.patch("ocr_pipelines.engines.google_vision.AnnotateImageResponse")
-@mock.patch("google.cloud.vision.ImageAnnotatorClient")
-@mock.patch("ocr_pipelines.engines.google_vision.Credentials")
+@mock.patch(
+    "ocr_pipelines.engines.google_vision.AnnotateImageResponse",
+    spec=True,
+    spec_set=True,
+)
+@mock.patch("google.cloud.vision.ImageAnnotatorClient", autospec=True, spec_set=True)
+@mock.patch(
+    "ocr_pipelines.engines.google_vision.Credentials", autospec=True, spec_set=True
+)
 def test_google_vision_engine(
     mock_credentials,
-    mock_image_annotator_client,
+    mock_image_annotator_client_class,
     mock_annotate_image_response,
     test_data_path,
 ):
@@ -24,9 +30,13 @@ def test_google_vision_engine(
 
     # mock mocksgoogle.cloud.vision dependencies
     mock_credentials.from_service_account_info.return_value = "fake-credentials_obj"
-    mock_image_annotator_client_instance = mock_image_annotator_client.return_value
+    mock_image_annotator_client_instance = (
+        mock_image_annotator_client_class.return_value
+    )
     mock_image_annotator_client_instance.annotate_image.return_value = "response"
-    mock_image_annotator_client.return_value = mock_image_annotator_client_instance
+    mock_image_annotator_client_class.return_value = (
+        mock_image_annotator_client_instance
+    )
     mock_annotate_image_response.to_json.return_value = json.dumps(expected_response)
 
     # evaluate
@@ -36,7 +46,7 @@ def test_google_vision_engine(
     # verify
     assert isinstance(response, dict)
     assert response == expected_response
-    mock_image_annotator_client.assert_called_once_with(
+    mock_image_annotator_client_class.assert_called_once_with(
         credentials="fake-credentials_obj"
     )
     mock_credentials.from_service_account_info.assert_called_once_with(credentials)
