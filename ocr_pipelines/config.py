@@ -35,6 +35,10 @@ class ImportConfig:
         self.images_path = Path(images_path)
         self.ocr_outputs_path = Path(ocr_outputs_path)
 
+    def create_paths(self):
+        self.images_path.mkdir(parents=True, exist_ok=True)
+        self.ocr_outputs_path.mkdir(parents=True, exist_ok=True)
+
     @classmethod
     def from_dict(cls, config_dict: dict) -> "ImportConfig":
         """Deserialize the config from a dictionary."""
