@@ -36,8 +36,24 @@ class ImportConfig(BaseConfig):
         self.model_type = model_type
         self.lang_hint = lang_hint
         self.credentials = credentials
-        self.img_download_base_dir = img_download_base_dir
-        self.ocr_output_base_dir = ocr_output_base_dir
+        self.img_download_base_dir = Path(img_download_base_dir)
+        self.ocr_output_base_dir = Path(ocr_output_base_dir)
+
+    @classmethod
+    def from_dict(cls, config_dict: dict) -> "ImportConfig":
+        """Deserialize the config from a dictionary."""
+        return cls(**config_dict)
+
+    def to_dict(self):
+        """Serialize the config to a dictionary which is JSON serializable."""
+        return {
+            "ocr_engine": self.ocr_engine,
+            "model_type": self.model_type,
+            "lang_hint": self.lang_hint,
+            "credentials": self.credentials,
+            "img_download_base_dir": str(self.img_download_base_dir),
+            "ocr_output_base_dir": str(self.ocr_output_base_dir),
+        }
 
 
 class ReimportConfig(BaseConfig):
