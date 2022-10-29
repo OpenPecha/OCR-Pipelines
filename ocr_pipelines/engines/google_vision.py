@@ -1,6 +1,5 @@
 import json
 from pathlib import Path
-from typing import List
 
 from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
@@ -9,7 +8,7 @@ from google.oauth2.service_account import Credentials
 from ocr_pipelines.engines import OcrEngine
 from ocr_pipelines.engines.engine import ImageBytes, ImageType
 
-GoogleVisionFeatures = List[dict]
+GoogleVisionFeatures = list[dict]
 
 
 class GoogleVisionEngine(OcrEngine):
