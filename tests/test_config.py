@@ -12,12 +12,9 @@ def test_import_config():
 
     assert import_config.ocr_engine == ocr_engine
     assert import_config.model_type == model_type
-    assert import_config.img_download_base_dir.is_dir()
+    assert import_config.images_path.is_dir()
     assert import_config.ocr_output_base_dir.is_dir()
-    assert (
-        import_config.img_download_base_dir
-        == Path().home() / ".ocr_pipelines_data" / "images"
-    )
+    assert import_config.images_path == Path().home() / ".ocr_pipelines_data" / "images"
     assert (
         import_config.ocr_output_base_dir
         == Path().home() / ".ocr_pipelines_data" / "ocr_outputs"
@@ -37,7 +34,7 @@ def test_import_config_serialized():
         model_type=model_type,
         lang_hint=lang_hint,
         credentials=credentials,
-        img_download_base_dir=images_path,
+        images_path=images_path,
         ocr_output_base_dir=ocr_output_path,
     )
     config_dict = import_config.to_dict()
@@ -47,7 +44,7 @@ def test_import_config_serialized():
         "model_type": model_type,
         "lang_hint": lang_hint,
         "credentials": credentials,
-        "img_download_base_dir": str(images_path),
+        "images_path": str(images_path),
         "ocr_output_base_dir": str(ocr_output_path),
     }
     assert json.dumps(config_dict)
@@ -66,7 +63,7 @@ def test_import_config_from_dict():
         "model_type": model_type,
         "lang_hint": lang_hint,
         "credentials": credentials,
-        "img_download_base_dir": str(images_path),
+        "images_path": str(images_path),
         "ocr_output_base_dir": str(ocr_output_path),
     }
 
@@ -76,7 +73,7 @@ def test_import_config_from_dict():
     assert import_config.model_type == model_type
     assert import_config.lang_hint == lang_hint
     assert import_config.credentials == credentials
-    assert import_config.img_download_base_dir == images_path
+    assert import_config.images_path == images_path
     assert import_config.ocr_output_base_dir == ocr_output_path
 
 

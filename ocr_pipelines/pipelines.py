@@ -21,7 +21,7 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig):
     """
 
     downloader = BDRCImageDownloader(
-        bdrc_scan_id=bdrc_scan_id, output_dir=config.img_download_base_dir
+        bdrc_scan_id=bdrc_scan_id, output_dir=config.images_path
     )
     images_download_dir = downloader.download_images()
 

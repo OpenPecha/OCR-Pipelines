@@ -29,14 +29,14 @@ class ImportConfig(BaseConfig):
         model_type: str = "",
         lang_hint: str = "",
         credentials: Optional[Credentials] = None,
-        img_download_base_dir: Path = IMAGES_PATH,
+        images_path: Path = IMAGES_PATH,
         ocr_output_base_dir: Path = OCR_OUTPUTS_PATH,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
         self.lang_hint = lang_hint
         self.credentials = credentials
-        self.img_download_base_dir = Path(img_download_base_dir)
+        self.images_path = Path(images_path)
         self.ocr_output_base_dir = Path(ocr_output_base_dir)
 
     @classmethod
@@ -51,7 +51,7 @@ class ImportConfig(BaseConfig):
             "model_type": self.model_type,
             "lang_hint": self.lang_hint,
             "credentials": self.credentials,
-            "img_download_base_dir": str(self.img_download_base_dir),
+            "images_path": str(self.images_path),
             "ocr_output_base_dir": str(self.ocr_output_base_dir),
         }
 
