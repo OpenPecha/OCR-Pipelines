@@ -38,7 +38,7 @@ class OCRExecutor:
                 self.config.model_type,
                 self.config.lang_hint,
                 self.image_download_dir,
-                self.config.ocr_output_base_dir,
+                self.config.ocr_outputs_path,
             )
             return ocr_engine
         else:
@@ -56,7 +56,7 @@ class OCRExecutor:
         for img_group_path in img_group_paths:
             img_group_id = img_group_path.name
             ocr_output_dir = (
-                self.config.ocr_output_base_dir
+                self.config.ocr_outputs_path
                 / bdrc_scan_id
                 / f"{bdrc_scan_id}-{img_group_id}"
             )
@@ -76,4 +76,4 @@ class OCRExecutor:
                 gzip_result = gzip_str(result_json)
                 result_fn.write_bytes(gzip_result)
 
-        return self.config.ocr_output_base_dir / bdrc_scan_id
+        return self.config.ocr_outputs_path / bdrc_scan_id

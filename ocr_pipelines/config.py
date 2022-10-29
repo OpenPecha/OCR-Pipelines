@@ -30,14 +30,14 @@ class ImportConfig(BaseConfig):
         lang_hint: str = "",
         credentials: Optional[Credentials] = None,
         images_path: Path = IMAGES_PATH,
-        ocr_output_base_dir: Path = OCR_OUTPUTS_PATH,
+        ocr_outputs_path: Path = OCR_OUTPUTS_PATH,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
         self.lang_hint = lang_hint
         self.credentials = credentials
         self.images_path = Path(images_path)
-        self.ocr_output_base_dir = Path(ocr_output_base_dir)
+        self.ocr_outputs_path = Path(ocr_outputs_path)
 
     @classmethod
     def from_dict(cls, config_dict: dict) -> "ImportConfig":
@@ -52,13 +52,13 @@ class ImportConfig(BaseConfig):
             "lang_hint": self.lang_hint,
             "credentials": self.credentials,
             "images_path": str(self.images_path),
-            "ocr_output_base_dir": str(self.ocr_output_base_dir),
+            "ocr_outputs_path": str(self.ocr_outputs_path),
         }
 
 
 class ReimportConfig(BaseConfig):
     def __init__(
-        self, ocr_engine: str, ocr_output_base_dir: Path = OCR_OUTPUTS_PATH
+        self, ocr_engine: str, ocr_outputs_path: Path = OCR_OUTPUTS_PATH
     ) -> None:
         self.ocr_engine = ocr_engine
-        self.ocr_output_base_dir = ocr_output_base_dir
+        self.ocr_outputs_path = ocr_outputs_path

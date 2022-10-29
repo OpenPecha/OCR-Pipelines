@@ -20,12 +20,12 @@ class GoogleVisionEngine(OcrEngine):
         model_type: str = None,
         lang_hint: str = None,
         image_download_dir: Path = Path.home(),
-        ocr_output_base_dir: Path = Path.home(),
+        ocr_outputs_path: Path = Path.home(),
     ) -> None:
         self.model_type = model_type
         self.lang_hint = lang_hint
         self.image_download_dir = image_download_dir
-        self.ocr_output_base_dir = ocr_output_base_dir
+        self.ocr_outputs_path = ocr_outputs_path
 
         self.credentials = Credentials.from_service_account_info(credentials)
         self.vision_client = vision.ImageAnnotatorClient(credentials=self.credentials)

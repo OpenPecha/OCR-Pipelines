@@ -21,11 +21,11 @@ def test_executor(
     image_download_dir = Path(test_data_path / "images", "bdrc_work")
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        ocr_output_base_dir = Path(tmpdirname)
+        ocr_outputs_path = Path(tmpdirname)
         import_config = ImportConfig(
             ocr_engine=str(mock_google_vision_engine),
             model_type="weekly-inbuit",
-            ocr_output_base_dir=ocr_output_base_dir,
+            ocr_outputs_path=ocr_outputs_path,
         )
         ocr_executor = OCRExecutor(
             config=import_config,

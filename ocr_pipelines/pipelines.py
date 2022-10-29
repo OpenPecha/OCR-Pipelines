@@ -47,7 +47,7 @@ def reimport_pipeline(pecha_id: str, config: ReimportConfig):
     """
 
     ocr_output_path = download_pecha_assets(
-        pecha_id, asset_type="ocr_output", download_dir=config.ocr_output_base_dir
+        pecha_id, asset_type="ocr_output", download_dir=config.ocr_outputs_path
     )
 
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -70,7 +70,7 @@ if __name__ == "__main__":
     bdrc_scan_id = "W8LS68000"
     config = ImportConfig(ocr_engine="google_vision", model_type="builtin/weekly")
     img_download_dir = Path("./data/images/")
-    ocr_output_base_dir = Path("./data/ocr_outputs")
+    ocr_outputs_path = Path("./data/ocr_outputs")
     import_pipeline(
         bdrc_scan_id=bdrc_scan_id,
         config=config,
