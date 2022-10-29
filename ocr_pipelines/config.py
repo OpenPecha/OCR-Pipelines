@@ -17,11 +17,7 @@ BATCH_PREFIX = "batch"
 Credentials = Union[dict, str]
 
 
-class BaseConfig:
-    pass
-
-
-class ImportConfig(BaseConfig):
+class ImportConfig:
     def __init__(
         self,
         ocr_engine: str,
@@ -56,7 +52,7 @@ class ImportConfig(BaseConfig):
         }
 
 
-class ReimportConfig(BaseConfig):
+class ReimportConfig:
     def __init__(
         self, ocr_engine: str, ocr_outputs_path: Path = OCR_OUTPUTS_PATH
     ) -> None:
