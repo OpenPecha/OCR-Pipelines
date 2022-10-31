@@ -1,8 +1,6 @@
 import requests
 
-
-class RequestFailedError(Exception):
-    pass
+from ocr_pipelines.exceptions import RequestFailedError
 
 
 def requests_get_json(url):

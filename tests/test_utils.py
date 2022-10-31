@@ -2,7 +2,8 @@ from unittest import mock
 
 import pytest
 
-from ocr_pipelines.utils import RequestFailedError, requests_get_json
+from ocr_pipelines.exceptions import RequestFailedError
+from ocr_pipelines.utils import requests_get_json
 
 
 @mock.patch("ocr_pipelines.utils.requests.get")
