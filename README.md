@@ -1,4 +1,7 @@
+
 # OCR-Pipelines
+
+[![CI](https://github.com/OpenPecha/OCR-Pipelines/actions/workflows/CI.yaml/badge.svg)](https://github.com/OpenPecha/OCR-Pipelines/actions/workflows/CI.yaml)
 
 Ocr pipelines has importing bdrc work to opf and reimporting ocred opf
 
