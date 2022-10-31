@@ -22,10 +22,10 @@ archive_bucket = S3.Bucket(ARCHIVE_BUCKET)
 BATCH_PREFIX = "batch"
 DEBUG = {"status": False}
 
-
+BDRC_NAMESPACE_PREFIX = "bdr"
 BDR = Namespace("http://purl.bdrc.io/resource/")
 NSM = NamespaceManager(rdflib.Graph())
-NSM.bind("bdr", BDR)
+NSM.bind(BDRC_NAMESPACE_PREFIX, BDR)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -51,9 +51,11 @@ class BDRCImageDownloader:
             raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
 
         for b in response_data["results"]["bindings"]:
-            image_group_url = NSM.qname(URIRef(b["volid"]["value"]))
-            image_group_id = image_group_url[4:]
-            yield image_group_id, image_group_url
+            image_group_ns_id = NSM.qname(URIRef(b["volid"]["value"]))
+            image_group_id = image_group_ns_id[
+                len(BDRC_NAMESPACE_PREFIX) + 1 :  # noqa E203
+            ]
+            yield image_group_id, image_group_ns_id
 
     def get_s3_prefix_path(
         self, image_group_id, service_id=None, batch_id=None, data_types=None
@@ -82,16 +84,14 @@ class BDRCImageDownloader:
             return paths
         return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
 
-    def get_s3_image_list(self, image_group_url):
+    def get_s3_image_list(self, image_group_ns_id):
         """
         returns the content of the dimension.json file for a volume ID, accessible at:
         https://iiifpres.bdrc.io/il/v:bdr:V22084_I0888 for volume ID bdr:V22084_I0888
         """
-        r = requests.get(f"https://iiifpres.bdrc.io/il/v:{image_group_url}")
+        r = requests.get(f"https://iiifpres.bdrc.io/il/v:{image_group_ns_id}")
         if r.status_code != 200:
-            logger.error(
-                f"Volume Images list Error: No images found for volume {image_group_url}: status code: {r.status_code}"
-            )
+            logger.error(f"No images found for volume {image_group_ns_id}")
             return {}
         return r.json()
 
@@ -157,9 +157,9 @@ class BDRCImageDownloader:
             del img
             self.save_with_wand(bits, output_fn)
 
-    def save_image_group(self, image_group_id, image_group_url, img_group_dir):
+    def save_image_group(self, image_group_id, image_group_ns_id, img_group_dir):
         s3_prefix = self.get_s3_prefix_path(image_group_id)
-        for imageinfo in self.get_s3_image_list(image_group_url):
+        for imageinfo in self.get_s3_image_list(image_group_ns_id):
             if self.image_exists_locally(imageinfo["filename"], img_group_dir):
                 continue
             s3path = s3_prefix + "/" + imageinfo["filename"]
@@ -172,9 +172,9 @@ class BDRCImageDownloader:
     def download_images(self):
         (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
         image_output_dir = self.output_dir / self.bdrc_scan_id
-        for img_group_id, img_group_url in self.get_image_groups():
+        for img_group_id, image_group_ns_id in self.get_image_groups():
             (image_output_dir / img_group_id).mkdir(exist_ok=True, parents=True)
             img_group_dir = image_output_dir / img_group_id
-            self.save_image_group(img_group_id, img_group_url, img_group_dir)
+            self.save_image_group(img_group_id, image_group_ns_id, img_group_dir)
 
         return image_output_dir
