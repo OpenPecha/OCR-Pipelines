@@ -40,7 +40,7 @@ class BDRCImageDownloader:
         self.bdrc_scan_id = bdrc_scan_id
         self.output_dir = output_dir
 
-    def get_imggroups(self):
+    def get_img_groups(self):
         url = f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
         try:
             response_data = requests_get_json(url)
@@ -170,7 +170,7 @@ class BDRCImageDownloader:
     def download_images(self):
         (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
         imgoutput_dir = self.output_dir / self.bdrc_scan_id
-        for img_group_id, imggroup_ns_id in self.get_imggroups():
+        for img_group_id, imggroup_ns_id in self.get_img_groups():
             (imgoutput_dir / img_group_id).mkdir(exist_ok=True, parents=True)
             img_group_dir = imgoutput_dir / img_group_id
             self.save_imggroup(img_group_id, imggroup_ns_id, img_group_dir)
