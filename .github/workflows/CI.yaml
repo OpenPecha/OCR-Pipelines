@@ -3,10 +3,10 @@ name: CI
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   build:
@@ -28,3 +28,4 @@ jobs:
         pip install pylint
     - name: Run Test 
       run: pytest -v
+
