@@ -40,7 +40,7 @@ class BDRCImageDownloader:
         self.bdrc_scan_id = bdrc_scan_id
         self.output_dir = output_dir
 
-    def get_image_groups(self):
+    def get_imggroups(self):
         url = f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
         try:
             response_data = requests_get_json(url)
@@ -51,14 +51,12 @@ class BDRCImageDownloader:
             raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
 
         for b in response_data["results"]["bindings"]:
-            image_group_ns_id = NSM.qname(URIRef(b["volid"]["value"]))
-            image_group_id = image_group_ns_id[
-                len(BDRC_NAMESPACE_PREFIX) + 1 :  # noqa E203
-            ]
-            yield image_group_id, image_group_ns_id
+            imggroup_ns_id = NSM.qname(URIRef(b["volid"]["value"]))
+            imggroup_id = imggroup_ns_id[len(BDRC_NAMESPACE_PREFIX) + 1 :]  # noqa E203
+            yield imggroup_id, imggroup_ns_id
 
     def get_s3_prefix_path(
-        self, image_group_id, service_id=None, batch_id=None, data_types=None
+        self, imggroup_id, service_id=None, batch_id=None, data_types=None
     ):
         """
         the input is like W22084, I0886. The output is an s3 prefix ("folder"), the function
@@ -69,11 +67,11 @@ class BDRCImageDownloader:
         md5 = hashlib.md5(str.encode(self.bdrc_scan_id))
         two = md5.hexdigest()[:2]
 
-        pre, rest = image_group_id[0], image_group_id[1:]
+        pre, rest = imggroup_id[0], imggroup_id[1:]
         if pre == "I" and rest.isdigit() and len(rest) == 4:
             suffix = rest
         else:
-            suffix = image_group_id
+            suffix = imggroup_id
 
         base_dir = f"Works/{two}/{self.bdrc_scan_id}"
         if service_id is not None:
@@ -84,18 +82,18 @@ class BDRCImageDownloader:
             return paths
         return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
 
-    def get_s3_image_list(self, image_group_ns_id):
+    def get_s3_imglist(self, imggroup_ns_id):
         """
         returns the content of the dimension.json file for a volume ID, accessible at:
         https://iiifpres.bdrc.io/il/v:bdr:V22084_I0888 for volume ID bdr:V22084_I0888
         """
-        r = requests.get(f"https://iiifpres.bdrc.io/il/v:{image_group_ns_id}")
+        r = requests.get(f"https://iiifpres.bdrc.io/il/v:{imggroup_ns_id}")
         if r.status_code != 200:
-            logger.error(f"No images found for volume {image_group_ns_id}")
+            logger.error(f"No images found for volume {imggroup_ns_id}")
             return {}
         return r.json()
 
-    def image_exists_locally(self, origfilename, imagegroup_output_dir):
+    def imgexists_locally(self, origfilename, imagegroup_output_dir):
         if origfilename.endswith(".tif"):
             output_fn = imagegroup_output_dir / f'{origfilename.split(".")[0]}.png'
             if output_fn.is_file():
@@ -157,10 +155,10 @@ class BDRCImageDownloader:
             del img
             self.save_with_wand(bits, output_fn)
 
-    def save_image_group(self, image_group_id, image_group_ns_id, img_group_dir):
-        s3_prefix = self.get_s3_prefix_path(image_group_id)
-        for imageinfo in self.get_s3_image_list(image_group_ns_id):
-            if self.image_exists_locally(imageinfo["filename"], img_group_dir):
+    def save_imggroup(self, imggroup_id, imggroup_ns_id, img_group_dir):
+        s3_prefix = self.get_s3_prefix_path(imggroup_id)
+        for imageinfo in self.get_s3_imglist(imggroup_ns_id):
+            if self.imgexists_locally(imageinfo["filename"], img_group_dir):
                 continue
             s3path = s3_prefix + "/" + imageinfo["filename"]
             if DEBUG["status"]:
@@ -171,10 +169,10 @@ class BDRCImageDownloader:
 
     def download_images(self):
         (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
-        image_output_dir = self.output_dir / self.bdrc_scan_id
-        for img_group_id, image_group_ns_id in self.get_image_groups():
-            (image_output_dir / img_group_id).mkdir(exist_ok=True, parents=True)
-            img_group_dir = image_output_dir / img_group_id
-            self.save_image_group(img_group_id, image_group_ns_id, img_group_dir)
+        imgoutput_dir = self.output_dir / self.bdrc_scan_id
+        for img_group_id, imggroup_ns_id in self.get_imggroups():
+            (imgoutput_dir / img_group_id).mkdir(exist_ok=True, parents=True)
+            img_group_dir = imgoutput_dir / img_group_id
+            self.save_imggroup(img_group_id, imggroup_ns_id, img_group_dir)
 
-        return image_output_dir
+        return imgoutput_dir

@@ -20,10 +20,10 @@ def test_get_imagegroups(mock_get_json):
         }
     }
 
-    image_downloader = BDRCImageDownloader(
+    imgdownloader = BDRCImageDownloader(
         bdrc_scan_id=bdrc_scan_id, output_dir=output_dir
     )
 
-    images_group = list(image_downloader.get_image_groups())
+    images_group = list(imgdownloader.get_imggroups())
 
     assert images_group == [("I00KG09835", "bdr:I00KG09835")]
