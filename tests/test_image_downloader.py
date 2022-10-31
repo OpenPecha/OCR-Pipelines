@@ -1,30 +1,29 @@
-import tempfile
 from pathlib import Path
+from unittest import mock
 
 from ocr_pipelines.image_downloader import BDRCImageDownloader
 
 
-def mock_get_image_groups():
-    return {"I0001": "wwww.google.com"}
+@mock.patch("ocr_pipelines.image_downloader.requests_get_json")
+def test_get_imagegroups(mock_get_json):
+    bdrc_scan_id = "fake-bdrc-scan-id"
+    output_dir = Path("/tmp")
+    mock_get_json.return_value = {
+        "results": {
+            "bindings": [
+                {
+                    "volid": {
+                        "value": "http://purl.bdrc.io/resource/I00KG09835",
+                    },
+                }
+            ]
+        }
+    }
 
+    image_downloader = BDRCImageDownloader(
+        bdrc_scan_id=bdrc_scan_id, output_dir=output_dir
+    )
 
-class MockDownloader:
-    def __init__(self, bdrc_scan_id: str, output_dir: Path) -> None:
-        pass
+    images_group = list(image_downloader.get_image_groups())
 
-    def download_images(self):
-        return Path.home()
-
-
-def test_image_downloader():
-    bdrc_scan_id = "W0001"
-
-    with tempfile.TemporaryDirectory() as tmpdirname:
-        output_dir = Path(tmpdirname)
-        image_downloader = BDRCImageDownloader(
-            bdrc_scan_id=bdrc_scan_id, output_dir=output_dir
-        )
-
-        image_output_path = image_downloader.download_images()
-
-        assert isinstance(image_output_path, Path)
+    assert images_group == [("I00KG09835", "bdr:I00KG09835")]

@@ -12,7 +12,8 @@ from rdflib import URIRef
 from rdflib.namespace import Namespace, NamespaceManager
 from wand.image import Image as WandImage
 
-from ocr_pipelines.exceptions import ImageGroupNotFound
+from ocr_pipelines.exceptions import BdcrScanNotFound, RequestFailedError
+from ocr_pipelines.utils import requests_get_json
 
 ARCHIVE_BUCKET = "archive.tbrc.org"
 S3 = boto3.resource("s3")
@@ -40,21 +41,19 @@ class BDRCImageDownloader:
         self.output_dir = output_dir
 
     def get_image_groups(self):
-        image_groups = {}
+        url = f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
         try:
-            r = requests.get(
-                f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
-            )
-        except Exception:
-            raise ImageGroupNotFound(
-                f"Volume Info Error: No info found for Work {self.bdrc_scan_id}: status code: {r.status_code}"
-            )
-        res = r.json()
-        for b in res["results"]["bindings"]:
+            response_data = requests_get_json(url)
+        except RequestFailedError:
+            raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
+
+        if not response_data["results"]["bindings"]:
+            raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
+
+        for b in response_data["results"]["bindings"]:
             image_group_url = NSM.qname(URIRef(b["volid"]["value"]))
             image_group_id = image_group_url[4:]
-            image_groups[image_group_id] = image_group_url
-        return image_groups
+            yield image_group_id, image_group_url
 
     def get_s3_prefix_path(
         self, image_group_id, service_id=None, batch_id=None, data_types=None
@@ -173,8 +172,7 @@ class BDRCImageDownloader:
     def download_images(self):
         (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
         image_output_dir = self.output_dir / self.bdrc_scan_id
-        image_groups = self.get_image_groups()
-        for img_group_id, img_group_url in image_groups.items():
+        for img_group_id, img_group_url in self.get_image_groups():
             (image_output_dir / img_group_id).mkdir(exist_ok=True, parents=True)
             img_group_dir = image_output_dir / img_group_id
             self.save_image_group(img_group_id, img_group_url, img_group_dir)

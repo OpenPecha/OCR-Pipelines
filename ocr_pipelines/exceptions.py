@@ -2,6 +2,10 @@ class OCREngineNotSupported(Exception):
     pass
 
 
+class BdcrScanNotFound(Exception):
+    pass
+
+
 class ImageGroupNotFound(Exception):
     pass
 
