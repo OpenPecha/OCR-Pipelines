@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Optional, Union
 
 # setup paths
 DATA_PATH = Path.home() / ".ocr_pipelines_data"
@@ -12,30 +13,52 @@ GOOGLE_HOCR_PARSER_LINK = ""
 NAMSEL_PARSER_LINK = ""
 BATCH_PREFIX = "batch"
 
+# types
+Credentials = Union[dict, str]
 
-class BaseConfig:
-    pass
 
-
-class ImportConfig(BaseConfig):
+class ImportConfig:
     def __init__(
         self,
         ocr_engine: str,
+        *,
         model_type: str = "",
         lang_hint: str = "",
-        img_download_base_dir: Path = IMAGES_PATH,
-        ocr_output_base_dir: Path = OCR_OUTPUTS_PATH,
+        credentials: Optional[Credentials] = None,
+        images_path: Path = IMAGES_PATH,
+        ocr_outputs_path: Path = OCR_OUTPUTS_PATH,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
         self.lang_hint = lang_hint
-        self.img_download_base_dir = img_download_base_dir
-        self.ocr_output_base_dir = ocr_output_base_dir
+        self.credentials = credentials
+        self.images_path = Path(images_path)
+        self.ocr_outputs_path = Path(ocr_outputs_path)
+
+    def create_paths(self):
+        self.images_path.mkdir(parents=True, exist_ok=True)
+        self.ocr_outputs_path.mkdir(parents=True, exist_ok=True)
+
+    @classmethod
+    def from_dict(cls, config_dict: dict) -> "ImportConfig":
+        """Deserialize the config from a dictionary."""
+        return cls(**config_dict)
+
+    def to_dict(self):
+        """Serialize the config to a dictionary which is JSON serializable."""
+        return {
+            "ocr_engine": self.ocr_engine,
+            "model_type": self.model_type,
+            "lang_hint": self.lang_hint,
+            "credentials": self.credentials,
+            "images_path": str(self.images_path),
+            "ocr_outputs_path": str(self.ocr_outputs_path),
+        }
 
 
-class ReimportConfig(BaseConfig):
+class ReimportConfig:
     def __init__(
-        self, ocr_engine: str, ocr_output_base_dir: Path = OCR_OUTPUTS_PATH
+        self, ocr_engine: str, ocr_outputs_path: Path = OCR_OUTPUTS_PATH
     ) -> None:
         self.ocr_engine = ocr_engine
-        self.ocr_output_base_dir = ocr_output_base_dir
+        self.ocr_outputs_path = ocr_outputs_path

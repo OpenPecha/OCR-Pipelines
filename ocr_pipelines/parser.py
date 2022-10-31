@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Union
 
 from openpecha.formatters.ocr.google_vision import (
     GoogleVisionBDRCFileProvider,
@@ -6,8 +7,10 @@ from openpecha.formatters.ocr.google_vision import (
 )
 from openpecha.formatters.ocr.hocr import HOCRBDRCFileProvider, HOCRFormatter
 
-from ocr_pipelines.config import BaseConfig
+from ocr_pipelines.config import ImportConfig, ReimportConfig
 from ocr_pipelines.exceptions import DataProviderNotSupported, OCREngineNotSupported
+
+ConfigType = Union[ImportConfig, ReimportConfig]
 
 PARSERS_REGISTER = {"google_vision": GoogleVisionFormatter, "hocr": HOCRFormatter}
 
@@ -20,12 +23,12 @@ DATA_PROVIDER_REGISTER = {
 class OCRParser:
     def __init__(
         self,
-        config: BaseConfig,
+        config: ConfigType,
         ocr_output_path: Path,
         opf_dir: str,
-        pecha_id=None,
-        parsers_register=PARSERS_REGISTER,
-        data_provider_register=DATA_PROVIDER_REGISTER,
+        pecha_id: str = None,
+        parsers_register: dict = PARSERS_REGISTER,
+        data_provider_register: dict = DATA_PROVIDER_REGISTER,
     ) -> None:
         self.config = config
         self.ocr_output_path = ocr_output_path

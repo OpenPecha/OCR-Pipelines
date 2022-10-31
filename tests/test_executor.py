@@ -1,38 +1,36 @@
 import tempfile
-
 from pathlib import Path
+from unittest import mock
 
 from ocr_pipelines.config import ImportConfig
 from ocr_pipelines.executor import OCRExecutor
 
 
-class MockGoogleOCREngine:
+@mock.patch("ocr_pipelines.executor.ocr_engine_class_register")
+@mock.patch("ocr_pipelines.executor.GoogleVisionEngine", autospec=True)
+def test_executor(
+    mock_google_vision_engine, mock_ocr_engine_class_register, test_data_path
+):
 
-    def __init__(self, config: ImportConfig, image_download_dir) -> None:
-        self.image_download_dir = image_download_dir
-        self.model_type = config.model_type
-        self.lang_hint = config.lang_hint
-        self.ocr_output_base_dir = config.ocr_output_base_dir
+    # mock ocr_engine_class_register and GoogleVisionEngine
+    mock_google_vision_engine_instance = mock_google_vision_engine.return_value
+    mock_google_vision_engine_instance.ocr.return_value = {}
+    mock_google_vision_engine.return_value = mock_google_vision_engine_instance
+    mock_ocr_engine_class_register.get.return_value = mock_google_vision_engine
 
-    def run(self):
-        return Path.home()
-
-ENGINE_REGISTER = {
-    'mock_google_vision': MockGoogleOCREngine
-}
-
-
-def test_executor_with_google_vision():
-    image_download_dir = Path('./')
-    import_config = ImportConfig(
-        ocr_engine="mock_google_vision",
-        model_type="weekly-inbuit"
-    )
+    image_download_dir = Path(test_data_path / "images", "bdrc_work")
 
     with tempfile.TemporaryDirectory() as tmpdirname:
-        ocr_output_base_dir = Path(tmpdirname)
-        ocr_executor = OCRExecutor(config=import_config, image_download_dir=image_download_dir, engine_register=ENGINE_REGISTER)
+        ocr_outputs_path = Path(tmpdirname)
+        import_config = ImportConfig(
+            ocr_engine=str(mock_google_vision_engine),
+            model_type="weekly-inbuit",
+            ocr_outputs_path=ocr_outputs_path,
+        )
+        ocr_executor = OCRExecutor(
+            config=import_config,
+            image_download_dir=image_download_dir,
+        )
         ocr_output_path = ocr_executor.run()
-    
 
         assert isinstance(ocr_output_path, Path)
