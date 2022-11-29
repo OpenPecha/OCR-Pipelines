@@ -5,18 +5,16 @@ from openpecha.formatters.ocr.google_vision import (
     GoogleVisionBDRCFileProvider,
     GoogleVisionFormatter,
 )
-from openpecha.formatters.ocr.hocr import HOCRBDRCFileProvider, HOCRFormatter
 
 from ocr_pipelines.config import ImportConfig, ReimportConfig
 from ocr_pipelines.exceptions import DataProviderNotSupported, OCREngineNotSupported
 
 ConfigType = Union[ImportConfig, ReimportConfig]
 
-PARSERS_REGISTER = {"google_vision": GoogleVisionFormatter, "hocr": HOCRFormatter}
+PARSERS_REGISTER = {"google_vision": GoogleVisionFormatter}
 
 DATA_PROVIDER_REGISTER = {
     "google_vision": GoogleVisionBDRCFileProvider,
-    "hocr": HOCRBDRCFileProvider,
 }
 
 
