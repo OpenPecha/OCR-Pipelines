@@ -69,7 +69,8 @@ class OCRExecutor:
                     continue
                 try:
                     result = ocr_engine.ocr(img_path)
-                except Exception:
+                except Exception as e:
+                    print(e)
                     print(f"Google OCR issue: {result_fn}")
                     continue
                 result_json = json.dumps(result)

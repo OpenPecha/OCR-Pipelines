@@ -161,8 +161,6 @@ class BDRCImageDownloader:
             if self.imgexists_locally(imageinfo["filename"], img_group_dir):
                 continue
             s3path = s3_prefix + "/" + imageinfo["filename"]
-            if DEBUG["status"]:
-                print(f'\t- downloading {imageinfo["filename"]}')
             filebits = self.get_s3_bits(s3path, archive_bucket)
             if filebits:
                 self.save_file(filebits, imageinfo["filename"], img_group_dir)
