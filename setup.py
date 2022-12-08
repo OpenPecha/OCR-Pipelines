@@ -11,7 +11,7 @@ def read(fname):
 
 setup(
     name="ocr_pipelines",
-    version="0.0.1",
+    version="0.0.2",
     author="Esukhia developers",
     author_email="esukhiadev@gmail.com",
     description="Ocr pipelines has importing bdrc work to opf and reimporting ocred opf",
@@ -25,7 +25,7 @@ setup(
         "boto3>=1.24.50, <2.0",
         "Pillow>9.0.0, <=10.0.0",
         "Wand>=0.6.0, <=1.0.0",
-        "google-cloud-vision>=3.1.4, <4.0.0"
+        "google-cloud-vision>=3.1.4, <4.0.0",
     ],
     python_requires=">=3.8",
 )
