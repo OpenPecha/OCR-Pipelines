@@ -1,13 +1,18 @@
 import gzip
 import io
 import json
+import logging
 from pathlib import Path
 
 from ocr_pipelines.config import ImportConfig
 from ocr_pipelines.engines import register as ocr_engine_class_register
 from ocr_pipelines.engines.engine import OcrEngine
 from ocr_pipelines.engines.google_vision import GoogleVisionEngine
-from ocr_pipelines.exceptions import OCREngineNotSupported
+from ocr_pipelines.exceptions import (
+    GoogleVisionCredentialsError,
+    OCREngineNotSupported,
+    OcrExecutorError,
+)
 
 
 def gzip_str(string_):
@@ -29,6 +34,7 @@ class OCRExecutor:
     ) -> None:
         self.config = config
         self.image_download_dir = image_download_dir
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     def get_ocr_engine(self) -> OcrEngine:
         ocr_engine_class = ocr_engine_class_register.get(self.config.ocr_engine)
@@ -48,8 +54,6 @@ class OCRExecutor:
 
     def run(self):
         ocr_engine = self.get_ocr_engine()
-        print("==========", __file__, ocr_engine)
-
         bdrc_scan_id = self.image_download_dir.name
         img_group_paths = list(self.image_download_dir.iterdir())
         img_group_paths.sort()
@@ -69,9 +73,14 @@ class OCRExecutor:
                     continue
                 try:
                     result = ocr_engine.ocr(img_path)
+                except GoogleVisionCredentialsError as e:
+                    self.logger.exception(e)
+                    raise OcrExecutorError("OCR Executor failed") from e
                 except Exception as e:
-                    print(e)
-                    print(f"Google OCR issue: {result_fn}")
+                    self.logger.error(
+                        f"{ocr_engine.__class__.__name__} failed to ocr {result_fn}"
+                    )
+                    self.logger.exception(e)
                     continue
                 result_json = json.dumps(result)
                 gzip_result = gzip_str(result_json)

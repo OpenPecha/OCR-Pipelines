@@ -1,12 +1,15 @@
 import json
+import logging
 from pathlib import Path
 
+from google.api_core import exceptions as gcloud_exceptions
 from google.cloud import vision
 from google.cloud.vision import AnnotateImageResponse
 from google.oauth2.service_account import Credentials
 
 from ocr_pipelines.engines import OcrEngine
 from ocr_pipelines.engines.engine import ImageBytes, ImageType
+from ocr_pipelines.exceptions import GoogleVisionCredentialsError
 
 GoogleVisionFeatures = list[dict]
 
@@ -29,6 +32,7 @@ class GoogleVisionEngine(OcrEngine):
 
         self.credentials = Credentials.from_service_account_info(credentials)
         self.vision_client = vision.ImageAnnotatorClient(credentials=self.credentials)
+        self.logger = logging.getLogger(f"{__name__}.{self.__class__.__name__}")
 
     @staticmethod
     def load_image_bytes(image: ImageType) -> ImageBytes:
@@ -86,13 +90,25 @@ class GoogleVisionEngine(OcrEngine):
         image_bytes = self.load_image_bytes(image)
         ocr_image = vision.Image(content=image_bytes)
 
-        response = self.vision_client.annotate_image(
-            {
-                "image": ocr_image,
-                "features": self.features,
-                "image_context": self.image_context,
-            }
-        )
+        try:
+            response = self.vision_client.annotate_image(
+                {
+                    "image": ocr_image,
+                    "features": self.features,
+                    "image_context": self.image_context,
+                }
+            )
+        except gcloud_exceptions.PermissionDenied as e:
+            raise GoogleVisionCredentialsError(
+                "Cannot access Google OCR. "
+                "Please check your credentials, make sure both Google Vision API and Billing are enabled"
+            ) from e
+        except gcloud_exceptions.ClientError as e:
+            self.logger.exception(e)
+            raise e
+        except Exception as e:
+            self.logger.exception(e)
+            raise e
 
         response_dict = self.response_to_dict(response)
 

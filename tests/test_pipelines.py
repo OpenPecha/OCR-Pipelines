@@ -1,6 +1,3 @@
-import json
-from pathlib import Path
-
 import pytest
 
 from ocr_pipelines.config import ImportConfig
@@ -8,8 +5,12 @@ from ocr_pipelines.pipelines import import_pipeline
 
 
 def get_credentials():
-    credentials_path = Path.home() / ".gcloud" / "service_account_key.json"
-    return json.load(credentials_path.open())
+    # import json
+    # from pathlib import Path
+
+    # credentials_path = Path.home() / ".gcloud" / "service_account_key.json"
+    # return json.load(credentials_path.open())
+    return {}
 
 
 @pytest.mark.skip(reason="This test requires a Google Cloud account")

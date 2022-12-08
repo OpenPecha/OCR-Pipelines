@@ -10,6 +10,10 @@ class OcrEngineError(Error):
     """Base-class for OCR engine errors."""
 
 
+class OcrExecutorError(Error):
+    """Base-class for OCR executor errors."""
+
+
 class ImageDownloaderError(Error):
     """Base-class for image downloader errors."""
 
@@ -20,6 +24,14 @@ class PipelineError(Error):
 
 class OCREngineNotSupported(OcrEngineError):
     """Specified OCR engine is not supported."""
+
+
+class GoogleVisionEngineError(OcrEngineError):
+    """Base-class for GoogleVisionEngine errors."""
+
+
+class GoogleVisionCredentialsError(GoogleVisionEngineError):
+    """Invalid credentials for Google Vision API."""
 
 
 class BdcrScanNotFound(ImageDownloaderError):
