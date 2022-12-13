@@ -2,7 +2,15 @@ import json
 import tempfile
 from pathlib import Path
 
-from ocr_pipelines.config import ImportConfig, ReimportConfig
+from ocr_pipelines.config import ImportConfig, ReimportConfig, get_batch_id
+
+
+def test_get_batch_id():
+    batch_id = get_batch_id()
+
+    assert isinstance(batch_id, str)
+    assert batch_id.startswith("batch-")
+    assert len(batch_id) == 10
 
 
 def test_import_config():

@@ -1,3 +1,4 @@
+import uuid
 from pathlib import Path
 from typing import Optional, Union
 
@@ -17,6 +18,10 @@ BATCH_PREFIX = "batch"
 Credentials = Union[dict, str]
 
 
+def get_batch_id() -> str:
+    return f"batch-{uuid.uuid4().hex[:4]}"
+
+
 class ImportConfig:
     def __init__(
         self,
@@ -27,6 +32,7 @@ class ImportConfig:
         credentials: Optional[Credentials] = None,
         images_path: Path = IMAGES_PATH,
         ocr_outputs_path: Path = OCR_OUTPUTS_PATH,
+        batch: str = None,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
@@ -34,6 +40,7 @@ class ImportConfig:
         self.credentials = credentials
         self.images_path = Path(images_path)
         self.ocr_outputs_path = Path(ocr_outputs_path)
+        self.batch = batch or get_batch_id()
 
     def create_paths(self):
         self.images_path.mkdir(parents=True, exist_ok=True)

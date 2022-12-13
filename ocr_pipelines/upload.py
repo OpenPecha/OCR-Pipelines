@@ -16,24 +16,36 @@ ORG_NAME = "Openpecha-data"
 TOKEN = os.environ["GITHUB_TOKEN"] if "GITHUB_TOKEN" in os.environ else ""
 
 
-def get_s3_prefix_path(work_local_id: str, imagegroup: str, asset_name: str):
-    """
-    the input is like W22084, I0886. The output is an s3 prefix ("folder"), the function
-    can be inspired from
-    https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
-    which is documented
-    """
-    md5 = hashlib.md5(str.encode(work_local_id))
-    two = md5.hexdigest()[:2]
+def get_bdrc_scan_id_hash(bdrc_scan_id: str) -> str:
+    return hashlib.md5(bdrc_scan_id.encode("utf-8")).hexdigest()[:2]
 
+
+def get_s3_suffix_for_imagegroup(imagegroup: str) -> str:
     pre, rest = imagegroup[0], imagegroup[1:]
     if pre == "I" and rest.isdigit() and len(rest) == 4:
-        suffix = rest
-    else:
-        suffix = imagegroup
+        return rest
+    return imagegroup
 
-    base_dir = f"Works/{two}/{work_local_id}"
-    return f"{base_dir}/{asset_name}/{work_local_id}-{suffix}"
+
+def get_s3_path_prefix(bdrc_scan_id: str, imagegroup: str, service: str, batch: str):
+    """Returns the s3 prefix for the given bdrc_scan_id and imagegroup
+
+    the function can be inspired from
+    https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
+
+    Args:
+        bdrc_scan_id (str): bdrc scan id (eg: W22084)
+        imagegroup (str): imagegroup (eg: I0886)
+        service (str): service (eg: google-vision)
+        batch_id (str): batch id
+
+    Returns:
+        str: s3 prefix (folder)
+    """
+    hash_ = get_bdrc_scan_id_hash(bdrc_scan_id)
+    imagegroup_suffix = get_s3_suffix_for_imagegroup(imagegroup)
+
+    return f"Works/{hash_}/{bdrc_scan_id}/{service}/{batch}/{bdrc_scan_id}-{imagegroup_suffix}"
 
 
 def is_archived(key):
@@ -44,15 +56,21 @@ def is_archived(key):
     return True
 
 
-def save_to_s3(asset_base_dir: Path, asset_name: str = "ocr_output"):
+def save_to_s3(path: Path, service: str, batch: str) -> None:
+    """Saves the ocr output to s3
 
-    bdrc_scan_id = asset_base_dir.stem
+    Args:
+        path (Path): path to the bdrc scan ocr output
+        service (str): service (eg: google-vision)
+        batch_id (str): batch id
+    """
 
-    for img_group_dir in asset_base_dir.iterdir():
+    bdrc_scan_id = path.stem
+    for img_group_dir in path.iterdir():
         img_group_id = img_group_dir.stem
-        s3_path = get_s3_prefix_path(bdrc_scan_id, img_group_id, asset_name)
+        s3_path_prefix = get_s3_path_prefix(bdrc_scan_id, img_group_id, service, batch)
         for ocr_output_file in img_group_dir.iterdir():
-            s3_output_path = f"{s3_path}/{ocr_output_file.name}"
+            s3_output_path = f"{s3_path_prefix}/{ocr_output_file.name}"
             if is_archived(s3_output_path):
                 continue
             ocr_output_bucket.put_object(
