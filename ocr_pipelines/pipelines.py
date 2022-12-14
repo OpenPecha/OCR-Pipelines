@@ -9,7 +9,7 @@ from ocr_pipelines.executor import OCRExecutor
 from ocr_pipelines.image_downloader import BDRCImageDownloader
 from ocr_pipelines.parser import OCRParser
 from ocr_pipelines.update_pecha import update_pecha
-from ocr_pipelines.upload import save_to_s3
+from ocr_pipelines.upload import BdrcS3Uploader
 
 
 def import_pipeline(bdrc_scan_id: str, config: ImportConfig):
@@ -34,7 +34,10 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig):
         )
         pecha = ocr_parser.parse()
 
-        save_to_s3(path=ocr_output_path, service=config.ocr_engine, batch=config.batch)
+        uploader = BdrcS3Uploader(
+            bdrc_scan_id=bdrc_scan_id, service=config.ocr_engine, batch=config.batch
+        )
+        uploader.upload(ocr_output_path=ocr_output_path)
         pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")
 
 

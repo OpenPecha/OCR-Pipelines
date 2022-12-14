@@ -3,12 +3,6 @@ from pathlib import Path
 
 import boto3
 import botocore
-from openpecha.core.pecha import OpenPechaFS
-
-OCR_OUTPUT_BUCKET = "ocr.bdrc.io"
-S3 = boto3.resource("s3")
-S3_client = boto3.client("s3")
-ocr_output_bucket = S3.Bucket(OCR_OUTPUT_BUCKET)
 
 
 class BdrcS3Uploader:
@@ -18,6 +12,10 @@ class BdrcS3Uploader:
         self.bdrc_scan_id = bdrc_scan_id
         self.service = service
         self.batch = batch
+
+        self.bucket_name = "ocr.bdrc.io"
+        self.client = boto3.client("s3")
+        self.bucket = boto3.resource("s3").Bucket(self.bucket_name)
 
     def __get_first_two_chars_hash(self, string) -> str:
         return hashlib.md5(string.encode("utf-8")).hexdigest()[:2]
@@ -43,39 +41,26 @@ class BdrcS3Uploader:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)
         return self.base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
 
+    def __is_archived(self, key):
+        try:
+            self.client.head_object(Bucket=self.bucket_name, Key=key)
+        except botocore.errorfactory.ClientError:
+            return False
+        return True
 
-def is_archived(key):
-    try:
-        S3_client.head_object(Bucket=OCR_OUTPUT_BUCKET, Key=key)
-    except botocore.errorfactory.ClientError:
-        return False
-    return True
+    def upload(self, ocr_output_path: Path):
+        """Save the ocr output to s3
 
-
-def save_to_s3(path: Path, service: str, batch: str) -> None:
-    """Saves the ocr output to s3
-
-    Args:
-        path (Path): path to the bdrc scan ocr output
-        service (str): service (eg: google-vision)
-        batch_id (str): batch id
-    """
-
-    for img_group_dir in path.iterdir():
-        # s3_path_prefix = get_s3_path_prefix(bdrc_scan_id, img_group_id, service, batch)
-        s3_path_prefix = ""
-        for ocr_output_file in img_group_dir.iterdir():
-            s3_output_path = f"{s3_path_prefix}/{ocr_output_file.name}"
-            if is_archived(s3_output_path):
-                continue
-            ocr_output_bucket.put_object(
-                Key=s3_output_path, Body=ocr_output_file.read_bytes()
-            )
-
-
-if __name__ == "__main__":
-    pecha_path = Path.home() / "esukhia/data/opf/I1AF6985A"
-    asset_path = Path.home() / "esukhia/data/ocr_output/WA00KG0614"
-    pecha_id = pecha_path.stem
-    pecha = OpenPechaFS(pecha_id=pecha_id, path=pecha_path)
-    pecha.publish(asset_path=asset_path, asset_name="ocr_output")
+        Args:
+            ocr_output_paths (Path): path to the ocr output
+        """
+        for local_imagegroup_dir in ocr_output_path.iterdir():
+            for ocr_output_file in local_imagegroup_dir.iterdir():
+                imagegroup = local_imagegroup_dir.name
+                s3_imagegroup_dir = self.get_imagegroup_dir(imagegroup)
+                s3_ocr_output_path = s3_imagegroup_dir / ocr_output_file.name
+                if self.__is_archived(s3_ocr_output_path):
+                    continue
+                self.bucket.put_object(
+                    Key=str(s3_ocr_output_path), Body=ocr_output_file.read_bytes()
+                )
