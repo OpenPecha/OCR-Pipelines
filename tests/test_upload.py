@@ -1,4 +1,5 @@
 from pathlib import Path
+from unittest import mock
 
 import pytest
 
@@ -70,3 +71,26 @@ def test_imagegroup_dir():
     assert imagegroup_dir == Path(
         "Works/67/W1KG12345/google-vision/batch-1/W1KG12345-1234"
     )
+
+
+def test_upload(tmp_path):
+    # arrange
+    bdrc_scan_id = "W1KG12345"
+    imagegroup = "I1234"
+    service = "google-vision"
+    batch = "batch-1"
+    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader.bucket = mock.MagicMock()
+
+    # prepare test data
+    bdrc_scan_ocr_output_dir = tmp_path / bdrc_scan_id
+    local_imagegroup_dir = bdrc_scan_ocr_output_dir / imagegroup
+    local_imagegroup_dir.mkdir(parents=True, exist_ok=True)
+    ocr_output_fn = local_imagegroup_dir / "ocr_output.json"
+    ocr_output_fn.write_bytes(b"{}")
+
+    # act
+    uploader.upload(bdrc_scan_ocr_output_dir)
+
+    # assert
+    assert uploader.bucket.put_object.call_count == 1
