@@ -73,24 +73,56 @@ def test_imagegroup_dir():
     )
 
 
-def test_upload(tmp_path):
-    # arrange
+@pytest.fixture(scope="module")
+def uploader():
     bdrc_scan_id = "W1KG12345"
-    imagegroup = "I1234"
     service = "google-vision"
     batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
-    uploader.bucket = mock.MagicMock()
+    return BdrcS3Uploader(bdrc_scan_id, service, batch)
 
-    # prepare test data
+
+@pytest.fixture(scope="function")
+def bdrc_scan_ocr_output_dir(tmp_path):
+    bdrc_scan_id = "W1KG12345"
+    imagegroup = "I1234"
     bdrc_scan_ocr_output_dir = tmp_path / bdrc_scan_id
     local_imagegroup_dir = bdrc_scan_ocr_output_dir / imagegroup
     local_imagegroup_dir.mkdir(parents=True, exist_ok=True)
     ocr_output_fn = local_imagegroup_dir / "ocr_output.json"
     ocr_output_fn.write_bytes(b"{}")
+    return bdrc_scan_ocr_output_dir
+
+
+def test_upload_ocr_outputs(uploader, bdrc_scan_ocr_output_dir):
+    # arrange
+    uploader.bucket = mock.MagicMock()
 
     # act
-    uploader.upload(bdrc_scan_ocr_output_dir)
+    uploader.upload_ocr_outputs(bdrc_scan_ocr_output_dir)
 
     # assert
     assert uploader.bucket.put_object.call_count == 1
+
+
+def test_upload_metadata(uploader):
+    # arrange
+    uploader.bucket = mock.MagicMock()
+    fake_metadata = {"fake": "metadata"}
+
+    # act
+    uploader.upload_metadata(fake_metadata)
+
+    # assert
+    assert uploader.bucket.put_object.call_count == 1
+
+
+def test_upload(uploader, bdrc_scan_ocr_output_dir):
+    # arrange
+    uploader.bucket = mock.MagicMock()
+    fake_metadata = {"fake": "metadata"}
+
+    # act
+    uploader.upload(bdrc_scan_ocr_output_dir, fake_metadata)
+
+    # assert
+    assert uploader.bucket.put_object.call_count == 2

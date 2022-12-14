@@ -1,4 +1,5 @@
 import hashlib
+import json
 from pathlib import Path
 
 import boto3
@@ -40,7 +41,18 @@ class BdrcS3Uploader:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)
         return self.base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
 
-    def upload(self, ocr_output_path: Path):
+    def upload_metadata(self, metadata: dict):
+        """Add metadata to s3 at `base_dir`/info.json
+
+        Args:
+            metadata (dict): metadata to add
+        """
+
+        metadata_path = self.base_dir / "info.json"
+        metadata_bytes = bytes(json.dumps(metadata), "utf-8")
+        self.bucket.put_object(Key=str(metadata_path), Body=metadata_bytes)
+
+    def upload_ocr_outputs(self, ocr_output_path: Path):
         """Save the ocr output to s3
 
         Args:
@@ -54,3 +66,13 @@ class BdrcS3Uploader:
                 self.bucket.put_object(
                     Key=str(s3_ocr_output_path), Body=ocr_output_file.read_bytes()
                 )
+
+    def upload(self, ocr_output_path: Path, metadata: dict):
+        """Upload the ocr output and metadata to s3
+
+        Args:
+            ocr_output_paths (Path): path to the ocr output
+            metadata (dict): metadata to add
+        """
+        self.upload_metadata(metadata)
+        self.upload_ocr_outputs(ocr_output_path)
