@@ -2,7 +2,6 @@ import hashlib
 from pathlib import Path
 
 import boto3
-import botocore
 
 
 class BdrcS3Uploader:
@@ -41,13 +40,6 @@ class BdrcS3Uploader:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)
         return self.base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
 
-    def __is_archived(self, key):
-        try:
-            self.client.head_object(Bucket=self.bucket_name, Key=key)
-        except botocore.errorfactory.ClientError:
-            return False
-        return True
-
     def upload(self, ocr_output_path: Path):
         """Save the ocr output to s3
 
@@ -59,8 +51,6 @@ class BdrcS3Uploader:
                 imagegroup = local_imagegroup_dir.name
                 s3_imagegroup_dir = self.get_imagegroup_dir(imagegroup)
                 s3_ocr_output_path = s3_imagegroup_dir / ocr_output_file.name
-                if self.__is_archived(s3_ocr_output_path):
-                    continue
                 self.bucket.put_object(
                     Key=str(s3_ocr_output_path), Body=ocr_output_file.read_bytes()
                 )
