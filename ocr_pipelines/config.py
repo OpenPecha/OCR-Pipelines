@@ -2,6 +2,8 @@ import uuid
 from pathlib import Path
 from typing import Optional, Union
 
+from ocr_pipelines import __version__ as ocr_pipelines_version
+
 # setup paths
 DATA_PATH = Path.home() / ".ocr_pipelines_data"
 
@@ -41,6 +43,7 @@ class ImportConfig:
         self.images_path = Path(images_path)
         self.ocr_outputs_path = Path(ocr_outputs_path)
         self.batch = batch or get_batch_id()
+        self.version = ocr_pipelines_version
 
     def create_paths(self):
         self.images_path.mkdir(parents=True, exist_ok=True)

@@ -1,5 +1,4 @@
 import tempfile
-from pathlib import Path
 
 from openpecha.core.pecha import OpenPechaFS
 from openpecha.utils import download_pecha_assets
@@ -7,12 +6,13 @@ from openpecha.utils import download_pecha_assets
 from ocr_pipelines.config import ImportConfig, ReimportConfig
 from ocr_pipelines.executor import OCRExecutor
 from ocr_pipelines.image_downloader import BDRCImageDownloader
+from ocr_pipelines.metadata import Metadata
 from ocr_pipelines.parser import OCRParser
 from ocr_pipelines.update_pecha import update_pecha
-from ocr_pipelines.upload import save_to_s3
+from ocr_pipelines.upload import BdrcS3Uploader
 
 
-def import_pipeline(bdrc_scan_id: str, config: ImportConfig):
+def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata):
     """Pipeline for importing ocred pecha to opf
 
     Args:
@@ -34,7 +34,11 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig):
         )
         pecha = ocr_parser.parse()
 
-        save_to_s3(path=ocr_output_path, service=config.ocr_engine, batch=config.batch)
+        uploader = BdrcS3Uploader(
+            bdrc_scan_id=bdrc_scan_id, service=config.ocr_engine, batch=config.batch
+        )
+        uploader.upload(ocr_output_path=ocr_output_path, metadata=metadata.to_dict())
+
         pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")
 
 
@@ -64,14 +68,3 @@ def reimport_pipeline(pecha_id: str, config: ReimportConfig):
 
         updated_pecha = update_pecha(old_pecha, new_pecha)
         updated_pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")
-
-
-if __name__ == "__main__":
-    bdrc_scan_id = "W8LS68000"
-    config = ImportConfig(ocr_engine="google_vision", model_type="builtin/weekly")
-    img_download_dir = Path("./data/images/")
-    ocr_outputs_path = Path("./data/ocr_outputs")
-    import_pipeline(
-        bdrc_scan_id=bdrc_scan_id,
-        config=config,
-    )
