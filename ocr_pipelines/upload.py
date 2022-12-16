@@ -45,9 +45,17 @@ class BdrcS3Uploader:
         hash_ = self.__get_first_two_chars_hash(self.bdrc_scan_id)
         return Path("Works") / hash_ / self.bdrc_scan_id / self.service / self.batch
 
-    def get_imagegroup_dir(self, imagegroup: str) -> Path:
+    @property
+    def s3_ocr_outputs_dir(self) -> Path:
+        return self.base_dir / "output"
+
+    @property
+    def s3_ocr_images_dir(self) -> Path:
+        return self.base_dir / "images"
+
+    def get_imagegroup_dir(self, base_dir: Path, imagegroup: str) -> Path:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)
-        return self.base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
+        return base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
 
     def upload_metadata(self, metadata: dict):
         """Add metadata to s3 at `base_dir`/info.json
@@ -65,7 +73,9 @@ class BdrcS3Uploader:
         for local_imagegroup_dir in images_path.iterdir():
             for image_file in local_imagegroup_dir.iterdir():
                 imagegroup = local_imagegroup_dir.name
-                s3_imagegroup_dir = self.get_imagegroup_dir(imagegroup)
+                s3_imagegroup_dir = self.get_imagegroup_dir(
+                    self.s3_ocr_images_dir, imagegroup
+                )
                 s3_image_path = s3_imagegroup_dir / image_file.name
                 self.bucket.put_object(
                     Key=str(s3_image_path), Body=image_file.read_bytes()
@@ -80,7 +90,9 @@ class BdrcS3Uploader:
         for local_imagegroup_dir in ocr_output_path.iterdir():
             for ocr_output_file in local_imagegroup_dir.iterdir():
                 imagegroup = local_imagegroup_dir.name
-                s3_imagegroup_dir = self.get_imagegroup_dir(imagegroup)
+                s3_imagegroup_dir = self.get_imagegroup_dir(
+                    self.s3_ocr_outputs_dir, imagegroup
+                )
                 s3_ocr_output_path = s3_imagegroup_dir / ocr_output_file.name
                 self.bucket.put_object(
                     Key=str(s3_ocr_output_path), Body=ocr_output_file.read_bytes()

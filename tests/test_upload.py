@@ -65,11 +65,19 @@ def test_imagegroup_dir():
     uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
 
     # act
-    imagegroup_dir = uploader.get_imagegroup_dir(imagegroup)
+    ocr_images_imagegroup_dir = uploader.get_imagegroup_dir(
+        uploader.s3_ocr_images_dir, imagegroup
+    )
+    ocr_outputs_imagegroup_dir = uploader.get_imagegroup_dir(
+        uploader.s3_ocr_outputs_dir, imagegroup
+    )
 
     # assert
-    assert imagegroup_dir == Path(
-        "Works/67/W1KG12345/google-vision/batch-1/W1KG12345-1234"
+    assert ocr_images_imagegroup_dir == Path(
+        "Works/67/W1KG12345/google-vision/batch-1/images/W1KG12345-1234"
+    )
+    assert ocr_outputs_imagegroup_dir == Path(
+        "Works/67/W1KG12345/google-vision/batch-1/output/W1KG12345-1234"
     )
 
 
@@ -96,13 +104,17 @@ def ocr_images_or_outputs_dir(tmp_path):
 def test_upload_ocr_images(uploader, ocr_images_or_outputs_dir):
     # arrange
     ocr_images_dir = ocr_images_or_outputs_dir
-    uploader.bucket = mock.MagicMock()
+    uploader.bucket.put_object = mock.MagicMock()
 
     # act
     uploader.upload_ocr_images(ocr_images_dir)
 
     # assert
     assert uploader.bucket.put_object.call_count == 1
+    assert uploader.bucket.put_object.call_args == mock.call(
+        Key="Works/67/W1KG12345/google-vision/batch-1/images/W1KG12345-1234/ocr_output.json",
+        Body=b"{}",
+    )
 
 
 def test_upload_ocr_outputs(uploader, ocr_images_or_outputs_dir):
