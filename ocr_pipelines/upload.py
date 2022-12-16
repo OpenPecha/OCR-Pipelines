@@ -1,8 +1,12 @@
 import hashlib
 import json
+import uuid
 from pathlib import Path
+from typing import Optional
 
 import boto3
+
+from ocr_pipelines.exceptions import FailedToAssignBatchError
 
 
 class BdrcS3Uploader:
@@ -16,14 +20,45 @@ class BdrcS3Uploader:
         batch (str): batch name
     """
 
-    def __init__(self, bdrc_scan_id: str, service: str, batch: str):
+    def __init__(self, bdrc_scan_id: str, service: str):
         self.bdrc_scan_id = bdrc_scan_id
         self.service = service
-        self.batch = batch
-
         self.bucket_name = "ocr.bdrc.io"
         self.client = boto3.client("s3")
         self.bucket = boto3.resource("s3").Bucket(self.bucket_name)
+        self._batch: Optional[str] = None
+
+    @property
+    def batch(self) -> str:
+        return self._batch or self.__get_available_batch_id()
+
+    def __s3_dir_exists(self, path: Path) -> bool:
+        """Check if a key exists in s3
+
+        Args:
+            key (str): key to check
+
+        Returns:
+            bool: True if the key exists, False otherwise
+        """
+        response = self.client.list_objects_v2(
+            Bucket=self.bucket_name, Prefix=str(path), MaxKeys=1
+        )
+        if response["KeyCount"] == 0:
+            return False
+        return True
+
+    def __get_available_batch_id(self, n_iter: int = 30) -> str:
+        n = 0
+        while n < n_iter:
+            candidate = f"batch-{uuid.uuid4().hex[:4]}"
+            s3_batch_dir = self.service_dir / candidate
+            if not self.__s3_dir_exists(s3_batch_dir):
+                return candidate
+            n += 1
+        raise FailedToAssignBatchError(
+            f"cannot find available batch for {self.bdrc_scan_id}/{self.service}  after 30 iterations!"
+        )
 
     def __get_first_two_chars_hash(self, string) -> str:
         return hashlib.md5(string.encode("utf-8")).hexdigest()[:2]
@@ -43,15 +78,23 @@ class BdrcS3Uploader:
         https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
         """
         hash_ = self.__get_first_two_chars_hash(self.bdrc_scan_id)
-        return Path("Works") / hash_ / self.bdrc_scan_id / self.service / self.batch
+        return Path("Works") / hash_ / self.bdrc_scan_id
+
+    @property
+    def service_dir(self) -> Path:
+        return self.base_dir / self.service
+
+    @property
+    def batch_dir(self) -> Path:
+        return self.service_dir / self.batch
 
     @property
     def s3_ocr_outputs_dir(self) -> Path:
-        return self.base_dir / "output"
+        return self.batch_dir / "output"
 
     @property
     def s3_ocr_images_dir(self) -> Path:
-        return self.base_dir / "images"
+        return self.batch_dir / "images"
 
     def get_imagegroup_dir(self, base_dir: Path, imagegroup: str) -> Path:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)

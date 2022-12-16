@@ -3,18 +3,23 @@ from unittest import mock
 
 import pytest
 
+from ocr_pipelines.exceptions import FailedToAssignBatchError
 from ocr_pipelines.upload import BdrcS3Uploader
 
 
-def test_get_frist_two_chars_hash():
-    # arrange
+@pytest.fixture(scope="module")
+def uploader():
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    return BdrcS3Uploader(bdrc_scan_id, service)
+
+
+def test_get_frist_two_chars_hash(uploader):
+    # arrange
+    bdrc_scan_id = "W1KG12345"
 
     # act
-    bdrc_scan_id_hash = uploader._BdrcS3Uploader__get_first_two_chars_hash(bdrc_scan_id)  # type: ignore
+    bdrc_scan_id_hash = uploader._BdrcS3Uploader__get_first_two_chars_hash(bdrc_scan_id)
 
     # assert
     assert bdrc_scan_id_hash == "67"
@@ -28,41 +33,117 @@ def test_get_frist_two_chars_hash():
         ("I1PD95878", "I1PD95878"),
     ],
 )
-def test_get_s3_suffix_for_imagegroup(imagegroup, expected):
-    # arrange
-    bdrc_scan_id = "W1KG12345"
-    service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
-
+def test_get_s3_suffix_for_imagegroup(uploader, imagegroup, expected):
     # act
-    s3_suffix = uploader._BdrcS3Uploader__get_s3_suffix_for_imagegroup(imagegroup)  # type: ignore
+    s3_suffix = uploader._BdrcS3Uploader__get_s3_suffix_for_imagegroup(imagegroup)
 
     # assert
     assert s3_suffix == expected
+
+
+def test_s3_dir_exists_False(uploader):
+    # arrange
+    uploader.client.list_objects_v2 = mock.MagicMock(return_value={"KeyCount": 0})
+
+    # act
+    dir_exits = uploader._BdrcS3Uploader__s3_dir_exists(Path("fake-path"))
+
+    # assert
+    assert not dir_exits
+    assert uploader.client.list_objects_v2.call_count == 1
+    assert uploader.client.list_objects_v2.call_args == mock.call(
+        Bucket=uploader.bucket_name, Prefix="fake-path", MaxKeys=1
+    )
+
+
+def test_s3_dir_exists_True(uploader):
+    # arrange
+    uploader.client.list_objects_v2 = mock.MagicMock(return_value={"KeyCount": 1})
+
+    # act
+    dir_exits = uploader._BdrcS3Uploader__s3_dir_exists(Path("fake-path"))
+
+    # assert
+    assert dir_exits
+    assert uploader.client.list_objects_v2.call_count == 1
+    assert uploader.client.list_objects_v2.call_args == mock.call(
+        Bucket=uploader.bucket_name, Prefix="fake-path", MaxKeys=1
+    )
+
+
+def test_get_available_batch_id(uploader):
+    # arrange
+    uploader._BdrcS3Uploader__s3_dir_exists = mock.MagicMock(return_value=False)
+
+    # act
+    batch_id = uploader._BdrcS3Uploader__get_available_batch_id()
+
+    # assert
+    assert batch_id
+    assert batch_id.startswith("batch-")
+    assert len(batch_id) == 10
+    assert uploader._BdrcS3Uploader__s3_dir_exists.call_count == 1
+    assert uploader._BdrcS3Uploader__s3_dir_exists.call_args == mock.call(
+        Path(f"Works/67/W1KG12345/google-vision/{batch_id}")
+    )
+
+
+def test_get_available_batch_id_cannot_find_id(uploader):
+    # arrange
+    uploader._BdrcS3Uploader__s3_dir_exists = mock.MagicMock(return_value=True)
+
+    # act
+    with pytest.raises(FailedToAssignBatchError):
+        uploader._BdrcS3Uploader__get_available_batch_id(n_iter=1)
 
 
 def test_base_dir():
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
 
     # act
     base_dir = uploader.base_dir
 
     # assert
-    assert base_dir == Path("Works/67/W1KG12345/google-vision/batch-1")
+    assert base_dir == Path("Works/67/W1KG12345")
+
+
+def test_service_dir():
+    # arrange
+    bdrc_scan_id = "W1KG12345"
+    service = "google-vision"
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+
+    # act
+    service_dir = uploader.service_dir
+
+    # assert
+    assert service_dir == Path("Works/67/W1KG12345/google-vision")
+
+
+def test_batch_dir():
+    # arrange
+    bdrc_scan_id = "W1KG12345"
+    service = "google-vision"
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    uploader._batch = "batch-1"
+
+    # act
+    batch_dir = uploader.batch_dir
+
+    # assert
+    assert batch_dir == Path("Works/67/W1KG12345/google-vision/batch-1")
 
 
 def test_imagegroup_dir():
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
     imagegroup = "I1234"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    uploader._batch = "batch-1"
 
     # act
     ocr_images_imagegroup_dir = uploader.get_imagegroup_dir(
@@ -81,14 +162,6 @@ def test_imagegroup_dir():
     )
 
 
-@pytest.fixture(scope="module")
-def uploader():
-    bdrc_scan_id = "W1KG12345"
-    service = "google-vision"
-    batch = "batch-1"
-    return BdrcS3Uploader(bdrc_scan_id, service, batch)
-
-
 @pytest.fixture(scope="function")
 def ocr_images_or_outputs_dir(tmp_path):
     bdrc_scan_id = "W1KG12345"
@@ -104,6 +177,7 @@ def ocr_images_or_outputs_dir(tmp_path):
 def test_upload_ocr_images(uploader, ocr_images_or_outputs_dir):
     # arrange
     ocr_images_dir = ocr_images_or_outputs_dir
+    uploader._batch = "batch-1"
     uploader.bucket.put_object = mock.MagicMock()
 
     # act
@@ -131,6 +205,7 @@ def test_upload_ocr_outputs(uploader, ocr_images_or_outputs_dir):
 
 def test_upload_metadata(uploader):
     # arrange
+    uploader._batch = "batch-1"
     uploader.bucket = mock.MagicMock()
     fake_metadata = {"fake": "metadata"}
 
@@ -143,12 +218,12 @@ def test_upload_metadata(uploader):
 
 def test_upload(uploader, ocr_images_or_outputs_dir):
     # arrange
+    uploader._batch = "batch-1"
     ocr_images_dir = ocr_images_or_outputs_dir
     ocr_outputs_dir = ocr_images_or_outputs_dir
     uploader.upload_ocr_images = mock.MagicMock()
     uploader.upload_ocr_outputs = mock.MagicMock()
     uploader.upload_metadata = mock.MagicMock()
-
     fake_metadata = {"fake": "metadata"}
 
     # act

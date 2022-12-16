@@ -34,9 +34,7 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata)
         )
         pecha = ocr_parser.parse()
 
-        uploader = BdrcS3Uploader(
-            bdrc_scan_id=bdrc_scan_id, service=config.ocr_engine, batch=config.batch
-        )
+        uploader = BdrcS3Uploader(bdrc_scan_id=bdrc_scan_id, service=config.ocr_engine)
         uploader.upload(ocr_output_path=ocr_output_path, metadata=metadata.to_dict())
 
         pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")

@@ -6,6 +6,14 @@ class ParserError(Error):
     """Base-class for parser errors."""
 
 
+class UploadError(Error):
+    """Base-class for upload errors."""
+
+
+class FailedToAssignBatchError(UploadError):
+    """Failed to assign a batch to the upload."""
+
+
 class OcrEngineError(Error):
     """Base-class for OCR engine errors."""
 

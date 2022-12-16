@@ -7,7 +7,6 @@ def test_metadata_to_dict():
         ocr_engine="tesseract",
         model_type="htr",
         lang_hint="bo-x-ewts",
-        batch="batch",
     )
     metadata = Metadata(
         pipeline_config=config,
