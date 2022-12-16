@@ -6,7 +6,15 @@ import boto3
 
 
 class BdrcS3Uploader:
-    """Uploads the ocr output to s3"""
+    """Class to represent BDRC S3 Uploader.
+
+    This uploader saves ocr images, output and metdatato s3
+
+    Args:
+        bdrc_scan_id (str): bdrc scan id
+        service (str): service name (e.g. google-vision, namsel-ocr)
+        batch (str): batch name
+    """
 
     def __init__(self, bdrc_scan_id: str, service: str, batch: str):
         self.bdrc_scan_id = bdrc_scan_id
@@ -52,6 +60,17 @@ class BdrcS3Uploader:
         metadata_bytes = bytes(json.dumps(metadata), "utf-8")
         self.bucket.put_object(Key=str(metadata_path), Body=metadata_bytes)
 
+    def upload_ocr_images(self, images_path: Path):
+        """Save the ocr images to s3"""
+        for local_imagegroup_dir in images_path.iterdir():
+            for image_file in local_imagegroup_dir.iterdir():
+                imagegroup = local_imagegroup_dir.name
+                s3_imagegroup_dir = self.get_imagegroup_dir(imagegroup)
+                s3_image_path = s3_imagegroup_dir / image_file.name
+                self.bucket.put_object(
+                    Key=str(s3_image_path), Body=image_file.read_bytes()
+                )
+
     def upload_ocr_outputs(self, ocr_output_path: Path):
         """Save the ocr output to s3
 
@@ -67,12 +86,17 @@ class BdrcS3Uploader:
                     Key=str(s3_ocr_output_path), Body=ocr_output_file.read_bytes()
                 )
 
-    def upload(self, ocr_output_path: Path, metadata: dict):
-        """Upload the ocr output and metadata to s3
+    def upload(self, ocr_images_path: Path, ocr_outputs_path: Path, metadata: dict):
+        """Upload the ocr images, output and metadata to s3
+
+        both ocr_images_path and ocr_outputs_path should have the same structure.
+        e.g.: W0001/I0001/0001.jpg and W0001/I0001/0001.json
 
         Args:
+            ocr_images_path (Path): path to the ocr images
             ocr_output_paths (Path): path to the ocr output
             metadata (dict): metadata to add
         """
         self.upload_metadata(metadata)
-        self.upload_ocr_outputs(ocr_output_path)
+        self.upload_ocr_outputs(ocr_outputs_path)
+        self.upload_ocr_images(ocr_images_path)
