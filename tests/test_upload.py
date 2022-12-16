@@ -10,8 +10,7 @@ def test_get_frist_two_chars_hash():
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
 
     # act
     bdrc_scan_id_hash = uploader._BdrcS3Uploader__get_first_two_chars_hash(bdrc_scan_id)  # type: ignore
@@ -32,8 +31,7 @@ def test_get_s3_suffix_for_imagegroup(imagegroup, expected):
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
 
     # act
     s3_suffix = uploader._BdrcS3Uploader__get_s3_suffix_for_imagegroup(imagegroup)  # type: ignore
@@ -46,23 +44,50 @@ def test_base_dir():
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    uploader.batch = "batch-1"
 
     # act
     base_dir = uploader.base_dir
 
     # assert
-    assert base_dir == Path("Works/67/W1KG12345/google-vision/batch-1")
+    assert base_dir == Path("Works/67/W1KG12345")
+
+
+def test_service_dir():
+    # arrange
+    bdrc_scan_id = "W1KG12345"
+    service = "google-vision"
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+
+    # act
+    service_dir = uploader.service_dir
+
+    # assert
+    assert service_dir == Path("Works/67/W1KG12345/google-vision")
+
+
+def test_batch_dir():
+    # arrange
+    bdrc_scan_id = "W1KG12345"
+    service = "google-vision"
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    uploader.batch = "batch-1"
+
+    # act
+    batch_dir = uploader.batch_dir
+
+    # assert
+    assert batch_dir == Path("Works/67/W1KG12345/google-vision/batch-1")
 
 
 def test_imagegroup_dir():
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
     imagegroup = "I1234"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
+    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    uploader.batch = "batch-1"
 
     # act
     imagegroup_dir = uploader.get_imagegroup_dir(imagegroup)
@@ -77,8 +102,7 @@ def test_imagegroup_dir():
 def uploader():
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    batch = "batch-1"
-    return BdrcS3Uploader(bdrc_scan_id, service, batch)
+    return BdrcS3Uploader(bdrc_scan_id, service)
 
 
 @pytest.fixture(scope="function")

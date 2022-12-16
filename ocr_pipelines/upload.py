@@ -1,21 +1,50 @@
 import hashlib
 import json
+import uuid
 from pathlib import Path
 
 import boto3
+
+from ocr_pipelines.exceptions import FailedToAssignBatchError
 
 
 class BdrcS3Uploader:
     """Uploads the ocr output to s3"""
 
-    def __init__(self, bdrc_scan_id: str, service: str, batch: str):
+    def __init__(self, bdrc_scan_id: str, service: str):
         self.bdrc_scan_id = bdrc_scan_id
         self.service = service
-        self.batch = batch
-
         self.bucket_name = "ocr.bdrc.io"
         self.client = boto3.client("s3")
         self.bucket = boto3.resource("s3").Bucket(self.bucket_name)
+        self.batch = self.__get_available_batch_id()
+
+    def __s3_dir_exits(self, path: Path) -> bool:
+        """Check if a key exists in s3
+
+        Args:
+            key (str): key to check
+
+        Returns:
+            bool: True if the key exists, False otherwise
+        """
+        response = self.client.list_objects_v2(
+            Bucket=self.bucket_name, Prefix=str(path), MaxKeys=1
+        )
+        if response["KeyCount"] == 0:
+            return False
+        return True
+
+    def __get_available_batch_id(self) -> str:
+        n = 0
+        while n < 30:
+            candidate = f"batch-{uuid.uuid4().hex[:4]}"
+            s3_batch_dir = self.service_dir / candidate
+            if not self.__s3_dir_exits(s3_batch_dir):
+                return candidate
+        raise FailedToAssignBatchError(
+            f"cannot find available batch for {self.bdrc_scan_id}/{self.service}  after 30 iterations!"
+        )
 
     def __get_first_two_chars_hash(self, string) -> str:
         return hashlib.md5(string.encode("utf-8")).hexdigest()[:2]
@@ -35,11 +64,19 @@ class BdrcS3Uploader:
         https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
         """
         hash_ = self.__get_first_two_chars_hash(self.bdrc_scan_id)
-        return Path("Works") / hash_ / self.bdrc_scan_id / self.service / self.batch
+        return Path("Works") / hash_ / self.bdrc_scan_id
+
+    @property
+    def service_dir(self) -> Path:
+        return self.base_dir / self.service
+
+    @property
+    def batch_dir(self) -> Path:
+        return self.service_dir / self.batch
 
     def get_imagegroup_dir(self, imagegroup: str) -> Path:
         imagegroup_suffix = self.__get_s3_suffix_for_imagegroup(imagegroup)
-        return self.base_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
+        return self.batch_dir / f"{self.bdrc_scan_id}-{imagegroup_suffix}"
 
     def upload_metadata(self, metadata: dict):
         """Add metadata to s3 at `base_dir`/info.json

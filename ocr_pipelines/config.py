@@ -34,7 +34,6 @@ class ImportConfig:
         credentials: Optional[Credentials] = None,
         images_path: Path = IMAGES_PATH,
         ocr_outputs_path: Path = OCR_OUTPUTS_PATH,
-        batch: str = None,
     ) -> None:
         self.ocr_engine = ocr_engine
         self.model_type = model_type
@@ -42,7 +41,6 @@ class ImportConfig:
         self.credentials = credentials
         self.images_path = Path(images_path)
         self.ocr_outputs_path = Path(ocr_outputs_path)
-        self.batch = batch or get_batch_id()
         self.version = ocr_pipelines_version
 
     def create_paths(self):
