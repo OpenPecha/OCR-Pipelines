@@ -3,6 +3,7 @@ from unittest import mock
 
 import pytest
 
+from ocr_pipelines.exceptions import FailedToAssignBatchError
 from ocr_pipelines.upload import BdrcS3Uploader
 
 
@@ -38,6 +39,62 @@ def test_get_s3_suffix_for_imagegroup(uploader, imagegroup, expected):
 
     # assert
     assert s3_suffix == expected
+
+
+def test_s3_dir_exists_False(uploader):
+    # arrange
+    uploader.client.list_objects_v2 = mock.MagicMock(return_value={"KeyCount": 0})
+
+    # act
+    dir_exits = uploader._BdrcS3Uploader__s3_dir_exists(Path("fake-path"))
+
+    # assert
+    assert not dir_exits
+    assert uploader.client.list_objects_v2.call_count == 1
+    assert uploader.client.list_objects_v2.call_args == mock.call(
+        Bucket=uploader.bucket_name, Prefix="fake-path", MaxKeys=1
+    )
+
+
+def test_s3_dir_exists_True(uploader):
+    # arrange
+    uploader.client.list_objects_v2 = mock.MagicMock(return_value={"KeyCount": 1})
+
+    # act
+    dir_exits = uploader._BdrcS3Uploader__s3_dir_exists(Path("fake-path"))
+
+    # assert
+    assert dir_exits
+    assert uploader.client.list_objects_v2.call_count == 1
+    assert uploader.client.list_objects_v2.call_args == mock.call(
+        Bucket=uploader.bucket_name, Prefix="fake-path", MaxKeys=1
+    )
+
+
+def test_get_available_batch_id(uploader):
+    # arrange
+    uploader._BdrcS3Uploader__s3_dir_exists = mock.MagicMock(return_value=False)
+
+    # act
+    batch_id = uploader._BdrcS3Uploader__get_available_batch_id()
+
+    # assert
+    assert batch_id
+    assert batch_id.startswith("batch-")
+    assert len(batch_id) == 10
+    assert uploader._BdrcS3Uploader__s3_dir_exists.call_count == 1
+    assert uploader._BdrcS3Uploader__s3_dir_exists.call_args == mock.call(
+        Path(f"Works/67/W1KG12345/google-vision/{batch_id}")
+    )
+
+
+def test_get_available_batch_id_cannot_find_id(uploader):
+    # arrange
+    uploader._BdrcS3Uploader__s3_dir_exists = mock.MagicMock(return_value=True)
+
+    # act
+    with pytest.raises(FailedToAssignBatchError):
+        uploader._BdrcS3Uploader__get_available_batch_id(n_iter=1)
 
 
 def test_base_dir():

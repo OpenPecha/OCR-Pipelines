@@ -24,7 +24,7 @@ class BdrcS3Uploader:
     def batch(self) -> str:
         return self._batch or self.__get_available_batch_id()
 
-    def __s3_dir_exits(self, path: Path) -> bool:
+    def __s3_dir_exists(self, path: Path) -> bool:
         """Check if a key exists in s3
 
         Args:
@@ -40,13 +40,14 @@ class BdrcS3Uploader:
             return False
         return True
 
-    def __get_available_batch_id(self) -> str:
+    def __get_available_batch_id(self, n_iter: int = 30) -> str:
         n = 0
-        while n < 30:
+        while n < n_iter:
             candidate = f"batch-{uuid.uuid4().hex[:4]}"
             s3_batch_dir = self.service_dir / candidate
-            if not self.__s3_dir_exits(s3_batch_dir):
+            if not self.__s3_dir_exists(s3_batch_dir):
                 return candidate
+            n += 1
         raise FailedToAssignBatchError(
             f"cannot find available batch for {self.bdrc_scan_id}/{self.service}  after 30 iterations!"
         )
