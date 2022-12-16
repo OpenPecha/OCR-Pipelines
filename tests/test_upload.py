@@ -65,11 +65,19 @@ def test_imagegroup_dir():
     uploader = BdrcS3Uploader(bdrc_scan_id, service, batch)
 
     # act
-    imagegroup_dir = uploader.get_imagegroup_dir(imagegroup)
+    ocr_images_imagegroup_dir = uploader.get_imagegroup_dir(
+        uploader.s3_ocr_images_dir, imagegroup
+    )
+    ocr_outputs_imagegroup_dir = uploader.get_imagegroup_dir(
+        uploader.s3_ocr_outputs_dir, imagegroup
+    )
 
     # assert
-    assert imagegroup_dir == Path(
-        "Works/67/W1KG12345/google-vision/batch-1/W1KG12345-1234"
+    assert ocr_images_imagegroup_dir == Path(
+        "Works/67/W1KG12345/google-vision/batch-1/images/W1KG12345-1234"
+    )
+    assert ocr_outputs_imagegroup_dir == Path(
+        "Works/67/W1KG12345/google-vision/batch-1/output/W1KG12345-1234"
     )
 
 
@@ -82,7 +90,7 @@ def uploader():
 
 
 @pytest.fixture(scope="function")
-def bdrc_scan_ocr_output_dir(tmp_path):
+def ocr_images_or_outputs_dir(tmp_path):
     bdrc_scan_id = "W1KG12345"
     imagegroup = "I1234"
     bdrc_scan_ocr_output_dir = tmp_path / bdrc_scan_id
@@ -93,12 +101,29 @@ def bdrc_scan_ocr_output_dir(tmp_path):
     return bdrc_scan_ocr_output_dir
 
 
-def test_upload_ocr_outputs(uploader, bdrc_scan_ocr_output_dir):
+def test_upload_ocr_images(uploader, ocr_images_or_outputs_dir):
     # arrange
+    ocr_images_dir = ocr_images_or_outputs_dir
+    uploader.bucket.put_object = mock.MagicMock()
+
+    # act
+    uploader.upload_ocr_images(ocr_images_dir)
+
+    # assert
+    assert uploader.bucket.put_object.call_count == 1
+    assert uploader.bucket.put_object.call_args == mock.call(
+        Key="Works/67/W1KG12345/google-vision/batch-1/images/W1KG12345-1234/ocr_output.json",
+        Body=b"{}",
+    )
+
+
+def test_upload_ocr_outputs(uploader, ocr_images_or_outputs_dir):
+    # arrange
+    ocr_outputs_dir = ocr_images_or_outputs_dir
     uploader.bucket = mock.MagicMock()
 
     # act
-    uploader.upload_ocr_outputs(bdrc_scan_ocr_output_dir)
+    uploader.upload_ocr_outputs(ocr_outputs_dir)
 
     # assert
     assert uploader.bucket.put_object.call_count == 1
@@ -116,13 +141,24 @@ def test_upload_metadata(uploader):
     assert uploader.bucket.put_object.call_count == 1
 
 
-def test_upload(uploader, bdrc_scan_ocr_output_dir):
+def test_upload(uploader, ocr_images_or_outputs_dir):
     # arrange
-    uploader.bucket = mock.MagicMock()
+    ocr_images_dir = ocr_images_or_outputs_dir
+    ocr_outputs_dir = ocr_images_or_outputs_dir
+    uploader.upload_ocr_images = mock.MagicMock()
+    uploader.upload_ocr_outputs = mock.MagicMock()
+    uploader.upload_metadata = mock.MagicMock()
+
     fake_metadata = {"fake": "metadata"}
 
     # act
-    uploader.upload(bdrc_scan_ocr_output_dir, fake_metadata)
+    uploader.upload(
+        ocr_images_path=ocr_images_dir,
+        ocr_outputs_path=ocr_outputs_dir,
+        metadata=fake_metadata,
+    )
 
     # assert
-    assert uploader.bucket.put_object.call_count == 2
+    assert uploader.upload_ocr_images.call_count == 1
+    assert uploader.upload_ocr_outputs.call_count == 1
+    assert uploader.upload_metadata.call_count == 1
