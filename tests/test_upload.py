@@ -6,14 +6,19 @@ import pytest
 from ocr_pipelines.upload import BdrcS3Uploader
 
 
-def test_get_frist_two_chars_hash():
-    # arrange
+@pytest.fixture(scope="module")
+def uploader():
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service)
+    return BdrcS3Uploader(bdrc_scan_id, service)
+
+
+def test_get_frist_two_chars_hash(uploader):
+    # arrange
+    bdrc_scan_id = "W1KG12345"
 
     # act
-    bdrc_scan_id_hash = uploader._BdrcS3Uploader__get_first_two_chars_hash(bdrc_scan_id)  # type: ignore
+    bdrc_scan_id_hash = uploader._BdrcS3Uploader__get_first_two_chars_hash(bdrc_scan_id)
 
     # assert
     assert bdrc_scan_id_hash == "67"
@@ -27,14 +32,9 @@ def test_get_frist_two_chars_hash():
         ("I1PD95878", "I1PD95878"),
     ],
 )
-def test_get_s3_suffix_for_imagegroup(imagegroup, expected):
-    # arrange
-    bdrc_scan_id = "W1KG12345"
-    service = "google-vision"
-    uploader = BdrcS3Uploader(bdrc_scan_id, service)
-
+def test_get_s3_suffix_for_imagegroup(uploader, imagegroup, expected):
     # act
-    s3_suffix = uploader._BdrcS3Uploader__get_s3_suffix_for_imagegroup(imagegroup)  # type: ignore
+    s3_suffix = uploader._BdrcS3Uploader__get_s3_suffix_for_imagegroup(imagegroup)
 
     # assert
     assert s3_suffix == expected
@@ -45,7 +45,6 @@ def test_base_dir():
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
     uploader = BdrcS3Uploader(bdrc_scan_id, service)
-    uploader.batch = "batch-1"
 
     # act
     base_dir = uploader.base_dir
@@ -72,7 +71,7 @@ def test_batch_dir():
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
     uploader = BdrcS3Uploader(bdrc_scan_id, service)
-    uploader.batch = "batch-1"
+    uploader._batch = "batch-1"
 
     # act
     batch_dir = uploader.batch_dir
@@ -87,7 +86,7 @@ def test_imagegroup_dir():
     service = "google-vision"
     imagegroup = "I1234"
     uploader = BdrcS3Uploader(bdrc_scan_id, service)
-    uploader.batch = "batch-1"
+    uploader._batch = "batch-1"
 
     # act
     imagegroup_dir = uploader.get_imagegroup_dir(imagegroup)
@@ -96,13 +95,6 @@ def test_imagegroup_dir():
     assert imagegroup_dir == Path(
         "Works/67/W1KG12345/google-vision/batch-1/W1KG12345-1234"
     )
-
-
-@pytest.fixture(scope="module")
-def uploader():
-    bdrc_scan_id = "W1KG12345"
-    service = "google-vision"
-    return BdrcS3Uploader(bdrc_scan_id, service)
 
 
 @pytest.fixture(scope="function")
@@ -119,6 +111,7 @@ def bdrc_scan_ocr_output_dir(tmp_path):
 
 def test_upload_ocr_outputs(uploader, bdrc_scan_ocr_output_dir):
     # arrange
+    uploader._batch = "batch-1"
     uploader.bucket = mock.MagicMock()
 
     # act
@@ -130,6 +123,7 @@ def test_upload_ocr_outputs(uploader, bdrc_scan_ocr_output_dir):
 
 def test_upload_metadata(uploader):
     # arrange
+    uploader._batch = "batch-1"
     uploader.bucket = mock.MagicMock()
     fake_metadata = {"fake": "metadata"}
 
@@ -142,6 +136,7 @@ def test_upload_metadata(uploader):
 
 def test_upload(uploader, bdrc_scan_ocr_output_dir):
     # arrange
+    uploader._batch = "batch-1"
     uploader.bucket = mock.MagicMock()
     fake_metadata = {"fake": "metadata"}
 

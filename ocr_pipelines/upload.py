@@ -2,6 +2,7 @@ import hashlib
 import json
 import uuid
 from pathlib import Path
+from typing import Optional
 
 import boto3
 
@@ -17,7 +18,11 @@ class BdrcS3Uploader:
         self.bucket_name = "ocr.bdrc.io"
         self.client = boto3.client("s3")
         self.bucket = boto3.resource("s3").Bucket(self.bucket_name)
-        self.batch = self.__get_available_batch_id()
+        self._batch: Optional[str] = None
+
+    @property
+    def batch(self) -> str:
+        return self._batch or self.__get_available_batch_id()
 
     def __s3_dir_exits(self, path: Path) -> bool:
         """Check if a key exists in s3
