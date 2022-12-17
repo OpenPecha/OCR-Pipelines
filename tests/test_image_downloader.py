@@ -7,7 +7,22 @@ from ocr_pipelines.exceptions import BdcrScanNotFound
 from ocr_pipelines.image_downloader import BDRCImageDownloader
 
 
+@pytest.mark.skip(reason="required interent connection")
 def test_download(tmp_path):
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    downloader = BDRCImageDownloader(
+        bdrc_scan_id=bdrc_scan_id, output_dir=Path(tmp_path)
+    )
+
+    # act
+    output_path = downloader.download()
+
+    # assert
+    assert output_path.is_dir()
+
+
+def test_download_unittest(tmp_path):
     # arrange
     bdrc_scan_id = "W1KG12429"
     downloader = BDRCImageDownloader(
@@ -103,3 +118,24 @@ def test_get_s3_img_list(mock_get_image_list_s3):
 
     assert images == [img_fn]
     mock_get_image_list_s3.assert_called_once_with(bdrc_scan_id, img_group)
+
+
+def test_save_img(tmp_path):
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    img_group_dir = Path(tmp_path) / bdrc_scan_id / "I00KG09835"
+    img_group_dir.mkdir(parents=True)
+    img_fn = "I00KG098350001.tif"
+
+    img_path = Path("tests/data/images/tiff_image.tif")
+    img_fp = img_path.open("rb")
+
+    output_dir = Path(tmp_path)
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=output_dir)
+
+    # act
+    downloader.save_img(img_fp, img_fn, img_group_dir)  # type: ignore
+
+    # assert
+    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
+    assert saved_img_path.is_file()

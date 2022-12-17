@@ -1,6 +1,7 @@
+import io
 import logging
 from pathlib import Path
-from typing import Iterator
+from typing import Iterator, Union
 
 from openpecha.buda import api as buda_api
 from PIL import Image as PillowImage
@@ -28,47 +29,56 @@ class BDRCImageDownloader:
         for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
             yield img["filename"]
 
-    def save_with_wand(self, bits, output_fn):
+    def save_with_wand(self, bits, output_fn) -> bool:
         try:
             with WandImage(blob=bits.getvalue()) as img:
                 img.format = "png"
                 img.save(filename=str(output_fn))
+                return True
         except Exception:
             logging.exception(
                 f"Error in saving: {output_fn} : origfilename: {output_fn.name}"
             )
+            return False
 
-    def save_img(self, bits, origfilename, imagegroup_output_dir):
+    def save_img_with_pillow(self, fp: io.BytesIO, fn: Path) -> bool:
         """
         uses pillow to interpret the bits as an image and save as a format
         that is appropriate for Google Vision (png instead of tiff for instance).
-        This may also apply some automatic treatment
         """
-        output_fn = imagegroup_output_dir / origfilename
-        if Path(origfilename).suffix in [".tif", ".tiff", ".TIF"]:
-            output_fn = imagegroup_output_dir / f'{origfilename.split(".")[0]}.png'
-        if output_fn.is_file():
-            return
         try:
-            img = PillowImage.open(bits)
+            img = PillowImage.open(fp)
+            img.save(str(fn))
         except Exception:
-            if bits.getvalue():
-                self.save_with_wand(bits, output_fn)
-            else:
-                logging.exception(f"Empty image: {output_fn}")
-            return
+            logging.exception(f"Error in saving: {fn}")
+            return False
 
-        try:
-            img.save(str(output_fn))
-        except Exception:
-            del img
-            self.save_with_wand(bits, output_fn)
+        return True
+
+    def save_img(self, fp: io.BytesIO, fn: Union[str, Path], img_group_dir: Path):
+        """Save the image in .png format to `img_groupdir/fn
+
+        Google Vision API does not support bdrc tiff images.
+
+        Args:
+            fp (io.BytesIO): image bits
+            fn (str): filename
+            img_group_dir (Path): directory to save the image
+        """
+        output_fn = img_group_dir / fn
+        fn = Path(fn)
+        if fn.suffix in [".tif", ".tiff", ".TIF"]:
+            output_fn = img_group_dir / f"{fn.stem}.png"
+
+        saved = self.save_img_with_pillow(fp, output_fn)
+        if not saved:
+            self.save_with_wand(fp, output_fn)
 
     def save_img_group(self, img_group, img_group_dir):
         s3_folder_prefix = buda_api.get_s3_folder_prefix(self.bdrc_scan_id, img_group)
         for img_fn in self.get_s3_img_list(img_group):
-            img_path_s3 = s3_folder_prefix + "/" + img_fn
-            img_bits = buda_api.gets3blob(img_path_s3)
+            img_path_s3 = Path(s3_folder_prefix) / img_fn
+            img_bits = buda_api.gets3blob(str(img_path_s3))
             if img_bits:
                 self.save_img(img_bits, img_fn, img_group_dir)
 
