@@ -67,23 +67,39 @@ def test_get_img_groups_for_invalid_bdrc_scan_id(mock_get_buda_scan_info):
 def test_save_img_group(mock_get_s3_folder_prefix, mock_gets3blob):
     # arrange
     bdrc_scan_id = "W1KG12429"
-    img_group_id = "I00KG09835"
+    img_group = "I00KG09835"
     img_fn = "I00KG098350001.tif"
     downloader = BDRCImageDownloader(bdrc_scan_id=bdrc_scan_id, output_dir=Path("/tmp"))
 
     # mocks
     mock_gets3blob.return_value = b"fake-image-content"
-    mock_get_s3_folder_prefix.return_value = f"{bdrc_scan_id}/{img_group_id}"
-    downloader.get_s3_imglist = mock.MagicMock(return_value=[img_fn])  # type: ignore
+    mock_get_s3_folder_prefix.return_value = f"{bdrc_scan_id}/{img_group}"
+    downloader.get_s3_img_list = mock.MagicMock(return_value=[img_fn])  # type: ignore
     downloader.save_img = mock.MagicMock()  # type: ignore
 
     # act
-    downloader.save_img_group(img_group_id, Path("/tmp"))
+    downloader.save_img_group(img_group, Path("/tmp"))
 
     # assert
-    downloader.get_s3_imglist.assert_called_once()
-    downloader.save_img.assert_called_once()
+    downloader.get_s3_img_list.assert_called_once_with(img_group)
     downloader.save_img.assert_called_once_with(
         b"fake-image-content", "I00KG098350001.tif", Path("/tmp")
     )
-    mock_gets3blob.assert_called_once_with(f"{bdrc_scan_id}/{img_group_id}/{img_fn}")
+    mock_gets3blob.assert_called_once_with(f"{bdrc_scan_id}/{img_group}/{img_fn}")
+
+
+@mock.patch("ocr_pipelines.image_downloader.buda_api.get_image_list_s3")
+def test_get_s3_img_list(mock_get_image_list_s3):
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    img_group = "I00KG09835"
+    img_fn = "I00KG098350001.tif"
+    downloader = BDRCImageDownloader(bdrc_scan_id=bdrc_scan_id, output_dir=Path("/tmp"))
+    # mocks
+    mock_get_image_list_s3.return_value = [{"filename": img_fn}]
+
+    # act
+    images = list(downloader.get_s3_img_list(img_group))
+
+    assert images == [img_fn]
+    mock_get_image_list_s3.assert_called_once_with(bdrc_scan_id, img_group)

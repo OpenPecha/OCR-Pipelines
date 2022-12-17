@@ -1,8 +1,8 @@
 import hashlib
 import io
 import logging
-from collections.abc import Generator
 from pathlib import Path
+from typing import Iterator
 
 import botocore
 from openpecha.buda import api as buda_api
@@ -63,7 +63,7 @@ class BDRCImageDownloader:
             return paths
         return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
 
-    def get_s3_imglist(self, img_group: str) -> Generator:
+    def get_s3_img_list(self, img_group: str) -> Iterator[str]:
         """Returns image list with filename for the given `image_group`"""
         for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
             yield img["filename"]
@@ -121,7 +121,7 @@ class BDRCImageDownloader:
 
     def save_img_group(self, img_group, img_group_dir):
         s3_folder_prefix = buda_api.get_s3_folder_prefix(self.bdrc_scan_id, img_group)
-        for img_fn in self.get_s3_imglist(img_group):
+        for img_fn in self.get_s3_img_list(img_group):
             img_path_s3 = s3_folder_prefix + "/" + img_fn
             img_bits = buda_api.gets3blob(img_path_s3)
             if img_bits:
