@@ -17,7 +17,7 @@ def test_download(tmp_path):
     # mocks
     downloader.save_img_group = mock.MagicMock()  # type: ignore
     downloader.get_img_groups = mock.MagicMock(  # type: ignore
-        return_value=[("I00KG09835", "I00KG09835")]
+        return_value=["I00KG09835"]
     )
 
     # act
@@ -29,9 +29,7 @@ def test_download(tmp_path):
     assert img_group_dir.is_dir()
     assert downloader.get_img_groups.call_count == 1
     assert downloader.save_img_group.call_count == 1
-    assert downloader.save_img_group.call_args == mock.call(
-        "I00KG09835", "I00KG09835", img_group_dir
-    )
+    assert downloader.save_img_group.call_args == mock.call("I00KG09835", img_group_dir)
 
 
 @mock.patch("ocr_pipelines.image_downloader.buda_api.get_buda_scan_info")
@@ -47,7 +45,7 @@ def test_get_imagegroups_for_valid_bdrc_scan_id(mock_get_buda_scan_info):
     images_group = list(imgdownloader.get_img_groups())
 
     # assert
-    assert images_group == [("I00KG09835", "I00KG09835")]
+    assert images_group == ["I00KG09835"]
 
 
 @mock.patch("ocr_pipelines.image_downloader.buda_api.get_buda_scan_info")
@@ -62,3 +60,30 @@ def test_get_img_groups_for_invalid_bdrc_scan_id(mock_get_buda_scan_info):
     # act and assert
     with pytest.raises(BdcrScanNotFound):
         list(image_downloader.get_img_groups())
+
+
+@mock.patch("ocr_pipelines.image_downloader.buda_api.gets3blob")
+@mock.patch("ocr_pipelines.image_downloader.buda_api.get_s3_folder_prefix")
+def test_save_img_group(mock_get_s3_folder_prefix, mock_gets3blob):
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    img_group_id = "I00KG09835"
+    img_fn = "I00KG098350001.tif"
+    downloader = BDRCImageDownloader(bdrc_scan_id=bdrc_scan_id, output_dir=Path("/tmp"))
+
+    # mocks
+    mock_gets3blob.return_value = b"fake-image-content"
+    mock_get_s3_folder_prefix.return_value = f"{bdrc_scan_id}/{img_group_id}"
+    downloader.get_s3_imglist = mock.MagicMock(return_value=[img_fn])  # type: ignore
+    downloader.save_img = mock.MagicMock()  # type: ignore
+
+    # act
+    downloader.save_img_group(img_group_id, Path("/tmp"))
+
+    # assert
+    downloader.get_s3_imglist.assert_called_once()
+    downloader.save_img.assert_called_once()
+    downloader.save_img.assert_called_once_with(
+        b"fake-image-content", "I00KG098350001.tif", Path("/tmp")
+    )
+    mock_gets3blob.assert_called_once_with(f"{bdrc_scan_id}/{img_group_id}/{img_fn}")

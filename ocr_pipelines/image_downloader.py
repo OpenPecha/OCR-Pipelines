@@ -1,30 +1,18 @@
 import hashlib
 import io
 import logging
+from collections.abc import Generator
 from pathlib import Path
 
-import boto3
 import botocore
-import rdflib
-import requests
 from openpecha.buda import api as buda_api
 from PIL import Image as PillowImage
-from rdflib.namespace import Namespace, NamespaceManager
 from wand.image import Image as WandImage
 
 from ocr_pipelines.exceptions import BdcrScanNotFound
 
-ARCHIVE_BUCKET = "archive.tbrc.org"
-S3 = boto3.resource("s3")
-archive_bucket = S3.Bucket(ARCHIVE_BUCKET)
-
 BATCH_PREFIX = "batch"
 DEBUG = {"status": False}
-
-BDRC_NAMESPACE_PREFIX = "bdr"
-BDR = Namespace("http://purl.bdrc.io/resource/")
-NSM = NamespaceManager(rdflib.Graph())
-NSM.bind(BDRC_NAMESPACE_PREFIX, BDR)
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
@@ -46,8 +34,7 @@ class BDRCImageDownloader:
         res = buda_api.get_buda_scan_info(self.bdrc_scan_id)
         if not res:
             raise BdcrScanNotFound(f"Scan {self.bdrc_scan_id} not found")
-        for img_group in res["image_groups"]:
-            yield img_group, img_group
+        yield from res["image_groups"]
 
     def get_s3_prefix_path(
         self, imggroup_id, service_id=None, batch_id=None, data_types=None
@@ -76,27 +63,10 @@ class BDRCImageDownloader:
             return paths
         return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
 
-    def get_s3_imglist(self, imggroup_ns_id):
-        """
-        returns the content of the dimension.json file for a volume ID, accessible at:
-        https://iiifpres.bdrc.io/il/v:bdr:V22084_I0888 for volume ID bdr:V22084_I0888
-        """
-        r = requests.get(f"https://iiifpres.bdrc.io/il/v:{imggroup_ns_id}")
-        if r.status_code != 200:
-            logger.error(f"No images found for volume {imggroup_ns_id}")
-            return {}
-        return r.json()
-
-    def imgexists_locally(self, origfilename, imagegroup_output_dir):
-        if origfilename.endswith(".tif"):
-            output_fn = imagegroup_output_dir / f'{origfilename.split(".")[0]}.png'
-            if output_fn.is_file():
-                return True
-        else:
-            output_fn = imagegroup_output_dir / origfilename
-            if output_fn.is_file():
-                return True
-        return False
+    def get_s3_imglist(self, img_group: str) -> Generator:
+        """Returns image list with filename for the given `image_group`"""
+        for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
+            yield img["filename"]
 
     def get_s3_bits(self, s3path, bucket):
         """
@@ -123,7 +93,7 @@ class BDRCImageDownloader:
                 f"Error in saving: {output_fn} : origfilename: {output_fn.name}"
             )
 
-    def save_file(self, bits, origfilename, imagegroup_output_dir):
+    def save_img(self, bits, origfilename, imagegroup_output_dir):
         """
         uses pillow to interpret the bits as an image and save as a format
         that is appropriate for Google Vision (png instead of tiff for instance).
@@ -149,22 +119,20 @@ class BDRCImageDownloader:
             del img
             self.save_with_wand(bits, output_fn)
 
-    def save_img_group(self, img_group_id, img_group_ns_id, img_group_dir):
-        s3_prefix = self.get_s3_prefix_path(img_group_id)
-        for imageinfo in self.get_s3_imglist(img_group_ns_id):
-            if self.imgexists_locally(imageinfo["filename"], img_group_dir):
-                continue
-            s3path = s3_prefix + "/" + imageinfo["filename"]
-            filebits = self.get_s3_bits(s3path, archive_bucket)
-            if filebits:
-                self.save_file(filebits, imageinfo["filename"], img_group_dir)
+    def save_img_group(self, img_group, img_group_dir):
+        s3_folder_prefix = buda_api.get_s3_folder_prefix(self.bdrc_scan_id, img_group)
+        for img_fn in self.get_s3_imglist(img_group):
+            img_path_s3 = s3_folder_prefix + "/" + img_fn
+            img_bits = buda_api.gets3blob(img_path_s3)
+            if img_bits:
+                self.save_img(img_bits, img_fn, img_group_dir)
 
     def download(self):
         bdrc_scan_dir = self.output_dir / self.bdrc_scan_id
         bdrc_scan_dir.mkdir(exist_ok=True, parents=True)
-        for img_group_id, img_group_ns_id in self.get_img_groups():
+        for img_group_id in self.get_img_groups():
             img_group_dir = bdrc_scan_dir / img_group_id
             img_group_dir.mkdir(exist_ok=True, parents=True)
-            self.save_img_group(img_group_id, img_group_ns_id, img_group_dir)
+            self.save_img_group(img_group_id, img_group_dir)
 
         return bdrc_scan_dir
