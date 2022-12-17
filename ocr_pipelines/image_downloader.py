@@ -1,10 +1,8 @@
 import hashlib
-import io
 import logging
 from pathlib import Path
 from typing import Iterator
 
-import botocore
 from openpecha.buda import api as buda_api
 from PIL import Image as PillowImage
 from wand.image import Image as WandImage
@@ -67,21 +65,6 @@ class BDRCImageDownloader:
         """Returns image list with filename for the given `image_group`"""
         for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
             yield img["filename"]
-
-    def get_s3_bits(self, s3path, bucket):
-        """
-        get the s3 binary data in memory
-        """
-        f = io.BytesIO()
-        try:
-            bucket.download_fileobj(s3path, f)
-            return f
-        except botocore.exceptions.ClientError as e:
-            if e.response["Error"]["Code"] == "404":
-                logger.exception(f"The object does not exist, {s3path}")
-            else:
-                raise
-        return
 
     def save_with_wand(self, bits, output_fn):
         try:
