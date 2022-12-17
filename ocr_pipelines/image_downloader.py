@@ -7,13 +7,12 @@ import boto3
 import botocore
 import rdflib
 import requests
+from openpecha.buda import api as buda_api
 from PIL import Image as PillowImage
-from rdflib import URIRef
 from rdflib.namespace import Namespace, NamespaceManager
 from wand.image import Image as WandImage
 
-from ocr_pipelines.exceptions import BdcrScanNotFound, RequestFailedError
-from ocr_pipelines.utils import requests_get_json
+from ocr_pipelines.exceptions import BdcrScanNotFound
 
 ARCHIVE_BUCKET = "archive.tbrc.org"
 S3 = boto3.resource("s3")
@@ -41,19 +40,14 @@ class BDRCImageDownloader:
         self.output_dir = output_dir
 
     def get_img_groups(self):
-        url = f"http://purl.bdrc.io/query/table/volumesForWork?R_RES=bdr:{self.bdrc_scan_id}&format=json&pageSize=500"
-        try:
-            response_data = requests_get_json(url)
-        except RequestFailedError:
-            raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
-
-        if not response_data["results"]["bindings"]:
-            raise BdcrScanNotFound(f"BDRC Scan ({self.bdrc_scan_id}) not found")
-
-        for b in response_data["results"]["bindings"]:
-            imggroup_ns_id = NSM.qname(URIRef(b["volid"]["value"]))
-            imggroup_id = imggroup_ns_id[len(BDRC_NAMESPACE_PREFIX) + 1 :]  # noqa E203
-            yield imggroup_id, imggroup_ns_id
+        """
+        Get the image groups from the bdrc scan id
+        """
+        res = buda_api.get_buda_scan_info(self.bdrc_scan_id)
+        if not res:
+            raise BdcrScanNotFound(f"Scan {self.bdrc_scan_id} not found")
+        for img_group in res["image_groups"]:
+            yield img_group, img_group
 
     def get_s3_prefix_path(
         self, imggroup_id, service_id=None, batch_id=None, data_types=None
