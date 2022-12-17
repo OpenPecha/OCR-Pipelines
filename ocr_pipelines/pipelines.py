@@ -23,9 +23,9 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata)
     downloader = BDRCImageDownloader(
         bdrc_scan_id=bdrc_scan_id, output_dir=config.images_path
     )
-    images_download_dir = downloader.download_images()
+    saved_images_dir = downloader.download()
 
-    ocr_executor = OCRExecutor(config=config, image_download_dir=images_download_dir)
+    ocr_executor = OCRExecutor(config=config, image_download_dir=saved_images_dir)
     ocr_output_path = ocr_executor.run()
 
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -35,7 +35,11 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata)
         pecha = ocr_parser.parse()
 
         uploader = BdrcS3Uploader(bdrc_scan_id=bdrc_scan_id, service=config.ocr_engine)
-        uploader.upload(ocr_output_path=ocr_output_path, metadata=metadata.to_dict())
+        uploader.upload(
+            ocr_images_path=saved_images_dir,
+            ocr_outputs_path=ocr_output_path,
+            metadata=metadata.to_dict(),
+        )
 
         pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")
 

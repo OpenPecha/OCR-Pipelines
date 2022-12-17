@@ -149,9 +149,9 @@ class BDRCImageDownloader:
             del img
             self.save_with_wand(bits, output_fn)
 
-    def save_imggroup(self, imggroup_id, imggroup_ns_id, img_group_dir):
-        s3_prefix = self.get_s3_prefix_path(imggroup_id)
-        for imageinfo in self.get_s3_imglist(imggroup_ns_id):
+    def save_img_group(self, img_group_id, img_group_ns_id, img_group_dir):
+        s3_prefix = self.get_s3_prefix_path(img_group_id)
+        for imageinfo in self.get_s3_imglist(img_group_ns_id):
             if self.imgexists_locally(imageinfo["filename"], img_group_dir):
                 continue
             s3path = s3_prefix + "/" + imageinfo["filename"]
@@ -159,12 +159,12 @@ class BDRCImageDownloader:
             if filebits:
                 self.save_file(filebits, imageinfo["filename"], img_group_dir)
 
-    def download_images(self):
-        (self.output_dir / self.bdrc_scan_id).mkdir(exist_ok=True, parents=True)
-        imgoutput_dir = self.output_dir / self.bdrc_scan_id
-        for img_group_id, imggroup_ns_id in self.get_img_groups():
-            (imgoutput_dir / img_group_id).mkdir(exist_ok=True, parents=True)
-            img_group_dir = imgoutput_dir / img_group_id
-            self.save_imggroup(img_group_id, imggroup_ns_id, img_group_dir)
+    def download(self):
+        bdrc_scan_dir = self.output_dir / self.bdrc_scan_id
+        bdrc_scan_dir.mkdir(exist_ok=True, parents=True)
+        for img_group_id, img_group_ns_id in self.get_img_groups():
+            img_group_dir = bdrc_scan_dir / img_group_id
+            img_group_dir.mkdir(exist_ok=True, parents=True)
+            self.save_img_group(img_group_id, img_group_ns_id, img_group_dir)
 
-        return imgoutput_dir
+        return bdrc_scan_dir
