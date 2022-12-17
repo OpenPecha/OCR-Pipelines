@@ -1,4 +1,3 @@
-import hashlib
 import logging
 from pathlib import Path
 from typing import Iterator
@@ -8,16 +7,6 @@ from PIL import Image as PillowImage
 from wand.image import Image as WandImage
 
 from ocr_pipelines.exceptions import BdcrScanNotFound
-
-BATCH_PREFIX = "batch"
-DEBUG = {"status": False}
-
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-formatter = logging.Formatter("%(asctime)s, %(levelname)s: %(message)s")
-file_handler = logging.FileHandler("bdrc_ocr.log")
-file_handler.setFormatter(formatter)
-logger.addHandler(file_handler)
 
 
 class BDRCImageDownloader:
@@ -34,33 +23,6 @@ class BDRCImageDownloader:
             raise BdcrScanNotFound(f"Scan {self.bdrc_scan_id} not found")
         yield from res["image_groups"]
 
-    def get_s3_prefix_path(
-        self, imggroup_id, service_id=None, batch_id=None, data_types=None
-    ):
-        """
-        the input is like W22084, I0886. The output is an s3 prefix ("folder"), the function
-        can be inspired from
-        https://github.com/buda-base/volume-manifest-tool/blob/f8b495d908b8de66ef78665f1375f9fed13f6b9c/manifestforwork.py#L94
-        which is documented
-        """
-        md5 = hashlib.md5(str.encode(self.bdrc_scan_id))
-        two = md5.hexdigest()[:2]
-
-        pre, rest = imggroup_id[0], imggroup_id[1:]
-        if pre == "I" and rest.isdigit() and len(rest) == 4:
-            suffix = rest
-        else:
-            suffix = imggroup_id
-
-        base_dir = f"Works/{two}/{self.bdrc_scan_id}"
-        if service_id is not None:
-            batch_dir = f"{base_dir}/{service_id}/{batch_id}"
-            paths = {BATCH_PREFIX: batch_dir}
-            for dt in data_types:
-                paths[dt] = f"{batch_dir}/{dt}/{self.bdrc_scan_id}-{suffix}"
-            return paths
-        return f"{base_dir}/images/{self.bdrc_scan_id}-{suffix}"
-
     def get_s3_img_list(self, img_group: str) -> Iterator[str]:
         """Returns image list with filename for the given `image_group`"""
         for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
@@ -72,7 +34,7 @@ class BDRCImageDownloader:
                 img.format = "png"
                 img.save(filename=str(output_fn))
         except Exception:
-            logger.exception(
+            logging.exception(
                 f"Error in saving: {output_fn} : origfilename: {output_fn.name}"
             )
 
@@ -93,7 +55,7 @@ class BDRCImageDownloader:
             if bits.getvalue():
                 self.save_with_wand(bits, output_fn)
             else:
-                logger.exception(f"Empty image: {output_fn}")
+                logging.exception(f"Empty image: {output_fn}")
             return
 
         try:
