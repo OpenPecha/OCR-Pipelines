@@ -1,3 +1,4 @@
+import io
 from pathlib import Path
 from unittest import mock
 
@@ -120,22 +121,130 @@ def test_get_s3_img_list(mock_get_image_list_s3):
     mock_get_image_list_s3.assert_called_once_with(bdrc_scan_id, img_group)
 
 
-def test_save_img(tmp_path):
+def test_save_img_pillow_option():
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    output_dir = Path("/tmp")
+    img_group_dir = output_dir / bdrc_scan_id / "I1111"
+    img_fn = "I1110001.tif"
+    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
+    img_fp = io.BytesIO(b"fake-image-content")
+
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=output_dir)
+
+    # mocks
+    downloader.save_img_with_pillow = mock.MagicMock(return_value=True)  # type: ignore
+
+    # act
+    downloader.save_img(img_fp, img_fn, img_group_dir)
+
+    # assert
+    downloader.save_img_with_pillow.assert_called_once_with(img_fp, saved_img_path)
+
+
+def test_save_img_wang_option(tmp_path):
+    bdrc_scan_id = "W1KG12429"
+    output_dir = Path("/tmp")
+    img_group_dir = output_dir / bdrc_scan_id / "I1111"
+    img_fn = "I1110001.tif"
+    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
+    img_fp = io.BytesIO(b"fake-image-content")
+
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=output_dir)
+
+    # mocks
+    downloader.save_img_with_pillow = mock.MagicMock(return_value=False)  # type: ignore
+    downloader.save_img_with_wand = mock.MagicMock(return_value=True)  # type: ignore
+
+    # act
+    downloader.save_img(img_fp, img_fn, img_group_dir)
+
+    # assert
+    downloader.save_img_with_pillow.assert_called_once_with(img_fp, saved_img_path)
+    downloader.save_img_with_wand.assert_called_once_with(img_fp, saved_img_path)
+
+
+def test_save_img_with_pillow(tmp_path):
     # arrange
     bdrc_scan_id = "W1KG12429"
     img_group_dir = Path(tmp_path) / bdrc_scan_id / "I00KG09835"
     img_group_dir.mkdir(parents=True)
     img_fn = "I00KG098350001.tif"
+    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
 
     img_path = Path("tests/data/images/tiff_image.tif")
-    img_fp = img_path.open("rb")
+    img_fp = io.BytesIO(img_path.read_bytes())
 
     output_dir = Path(tmp_path)
     downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=output_dir)
 
     # act
-    downloader.save_img(img_fp, img_fn, img_group_dir)  # type: ignore
+    saved = downloader.save_img_with_pillow(img_fp, saved_img_path)
 
     # assert
-    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
+    assert saved is True
     assert saved_img_path.is_file()
+
+
+@mock.patch("ocr_pipelines.image_downloader.PillowImage.open")
+def test_save_img_with_pillow_error(mock_PillowImage_open, caplog):
+    # arrange
+    saved_img_path = "/tmp/image.png"
+    img_fp = io.BytesIO(b"fake-image-content")
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=Path("/tmp"))
+
+    # mocks
+    mock_PillowImage_open.side_effect = Exception("fake exception")
+
+    # act
+    saved = downloader.save_img_with_pillow(img_fp, saved_img_path)  # type: ignore
+
+    # assert
+    assert saved is False
+
+    log = caplog.records[0]
+    assert log.levelname == "ERROR"
+    assert log.msg == f"Failed to save {saved_img_path} with `Pillow`"
+
+
+def test_save_img_with_wang(tmp_path):
+    # arrange
+    bdrc_scan_id = "W1KG12429"
+    img_group_dir = Path(tmp_path) / bdrc_scan_id / "I00KG09835"
+    img_group_dir.mkdir(parents=True)
+    img_fn = "I00KG098350001.tif"
+    saved_img_path = img_group_dir / f"{Path(img_fn).stem}.png"
+
+    img_path = Path("tests/data/images/tiff_image.tif")
+    img_fp = io.BytesIO(img_path.read_bytes())
+
+    output_dir = Path(tmp_path)
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=output_dir)
+
+    # act
+    saved = downloader.save_img_with_wand(img_fp, saved_img_path)
+
+    # assert
+    assert saved is True
+    assert saved_img_path.is_file()
+
+
+@mock.patch("ocr_pipelines.image_downloader.WandImage")
+def test_save_img_with_wand_error(mock_WandImage, caplog):
+    # arrange
+    saved_img_path = Path("/tmp/image.png")
+    img_fp = io.BytesIO(b"fake-image-content")
+    downloader = BDRCImageDownloader(bdrc_scan_id="W1KG124", output_dir=Path("/tmp"))
+
+    # mocks
+    mock_WandImage.side_effect = Exception("fake exception")
+
+    # act
+    saved = downloader.save_img_with_wand(img_fp, saved_img_path)
+
+    # assert
+    assert saved is False
+
+    log = caplog.records[0]
+    assert log.levelname == "ERROR"
+    assert log.msg == f"Failed to save {saved_img_path} with `Wand`"

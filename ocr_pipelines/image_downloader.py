@@ -29,16 +29,14 @@ class BDRCImageDownloader:
         for img in buda_api.get_image_list_s3(self.bdrc_scan_id, img_group):
             yield img["filename"]
 
-    def save_with_wand(self, bits, output_fn) -> bool:
+    def save_img_with_wand(self, fp: io.BytesIO, fn: Path) -> bool:
         try:
-            with WandImage(blob=bits.getvalue()) as img:
+            with WandImage(blob=fp.getvalue()) as img:
                 img.format = "png"
-                img.save(filename=str(output_fn))
+                img.save(filename=str(fn))
                 return True
         except Exception:
-            logging.exception(
-                f"Error in saving: {output_fn} : origfilename: {output_fn.name}"
-            )
+            logging.exception(f"Failed to save {fn} with `Wand`")
             return False
 
     def save_img_with_pillow(self, fp: io.BytesIO, fn: Path) -> bool:
@@ -50,7 +48,7 @@ class BDRCImageDownloader:
             img = PillowImage.open(fp)
             img.save(str(fn))
         except Exception:
-            logging.exception(f"Error in saving: {fn}")
+            logging.exception(f"Failed to save {fn} with `Pillow`")
             return False
 
         return True
@@ -72,7 +70,7 @@ class BDRCImageDownloader:
 
         saved = self.save_img_with_pillow(fp, output_fn)
         if not saved:
-            self.save_with_wand(fp, output_fn)
+            self.save_img_with_wand(fp, output_fn)
 
     def save_img_group(self, img_group, img_group_dir):
         s3_folder_prefix = buda_api.get_s3_folder_prefix(self.bdrc_scan_id, img_group)
