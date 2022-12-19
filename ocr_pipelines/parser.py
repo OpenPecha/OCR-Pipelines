@@ -48,6 +48,7 @@ class OCRParser:
         return {
             "bdrc_scan_id": self.ocr_output_path.name,
             "source": "bdrc",
+            "imported_at": self.metadata.timestamp,
             "ocr_info": {
                 "engine": self.metadata.pipeline_config.ocr_engine,
                 "model_type": self.metadata.pipeline_config.model_type,

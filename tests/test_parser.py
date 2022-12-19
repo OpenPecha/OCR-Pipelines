@@ -54,6 +54,7 @@ def test_ocr_parser_get_ocr_import_info():
     assert ocr_import_info == {
         "bdrc_scan_id": "W00001",
         "source": "bdrc",
+        "imported_at": metadata.timestamp,
         "ocr_info": {
             "engine": metadata.pipeline_config.ocr_engine,
             "model_type": metadata.pipeline_config.model_type,
