@@ -21,13 +21,18 @@ class Metadata:
         sponsor: str,
         sponsor_consent: bool = False,
         timestamp: str = None,
+        batch_id: str = None,
         **kwargs,
     ):
         self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
         self.pipeline_config = pipeline_config
         self.sponsor = sponsor
         self.sponsor_consent = sponsor_consent
+        self.batch_id = batch_id
         self.kwargs = kwargs
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         return {
