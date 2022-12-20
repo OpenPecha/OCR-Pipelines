@@ -10,6 +10,7 @@ from openpecha.formatters.ocr.hocr import BDRCGBFileProvider, HOCRFormatter
 from ocr_pipelines.config import ImportConfig, ReimportConfig
 from ocr_pipelines.engines import GoogleVisionEngine
 from ocr_pipelines.exceptions import DataProviderNotSupported, OCREngineNotSupported
+from ocr_pipelines.metadata import Metadata
 
 ConfigType = Union[ImportConfig, ReimportConfig]
 
@@ -29,17 +30,22 @@ class OCRParser:
         self,
         config: ConfigType,
         ocr_output_path: Path,
-        opf_dir: str,
+        output_path: Path,
+        metadata: Metadata,
         pecha_id: str = None,
         parsers_register: dict = PARSERS_REGISTER,
         data_provider_register: dict = DATA_PROVIDER_REGISTER,
     ) -> None:
         self.config = config
         self.ocr_output_path = ocr_output_path
-        self.opf_dir = opf_dir
+        self.output_path = output_path
         self.parsers_register = parsers_register
         self.data_provider_register = data_provider_register
         self.pecha_id = pecha_id
+        self.metadata = metadata
+
+    def get_ocr_import_info(self):
+        return self.metadata.to_dict()
 
     def parse(self):
         try:
@@ -56,13 +62,15 @@ class OCRParser:
             )
 
         bdrc_scan_id = self.ocr_output_path.stem
-        formatter = formatter_class(output_path=self.opf_dir)
+        formatter = formatter_class(output_path=self.output_path)
         data_provider = data_provider_class(
             bdrc_scan_id=bdrc_scan_id,
             ocr_import_info={},
             ocr_disk_path=self.ocr_output_path,
         )
         pecha = formatter.create_opf(
-            data_provider=data_provider, pecha_id=self.pecha_id
+            data_provider=data_provider,
+            pecha_id=self.pecha_id,
+            ocr_import_info=self.get_ocr_import_info(),
         )
         return pecha

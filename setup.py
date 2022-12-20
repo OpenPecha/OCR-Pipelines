@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 
 from setuptools import find_packages, setup
@@ -9,9 +10,17 @@ def read(fname):
         return f.read()
 
 
+def get_version(prop, project):
+    project = Path(__file__).parent / project / "__init__.py"
+    result = re.search(rf'{prop}\s*=\s*[\'"]([^\'"]*)[\'"]', project.read_text())
+    if result is None:
+        raise Exception(f"Unable to find version string for {prop} in {project}")
+    return result.group(1)
+
+
 setup(
     name="ocr_pipelines",
-    version="0.0.2",
+    version=get_version("__version__", "ocr_pipelines"),
     author="Esukhia developers",
     author_email="esukhiadev@gmail.com",
     description="Ocr pipelines has importing bdrc work to opf and reimporting ocred opf",

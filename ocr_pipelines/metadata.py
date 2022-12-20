@@ -21,13 +21,18 @@ class Metadata:
         sponsor: str,
         sponsor_consent: bool = False,
         timestamp: str = None,
+        batch_id: str = None,
         **kwargs,
     ):
         self.timestamp = timestamp or datetime.now(timezone.utc).isoformat()
         self.pipeline_config = pipeline_config
         self.sponsor = sponsor
         self.sponsor_consent = sponsor_consent
+        self.batch_id = batch_id
         self.kwargs = kwargs
+
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
     def to_dict(self):
         return {
@@ -35,8 +40,22 @@ class Metadata:
             "ocr_engine": self.pipeline_config.ocr_engine,
             "ocr_model_type": self.pipeline_config.model_type,
             "ocr_lang_hint": self.pipeline_config.lang_hint,
-            "ocr_pipeline_version": self.pipeline_config.version,
+            "software_id": f"ocr-pipelines@v{self.pipeline_config.version}",
             "sponsor": self.sponsor,
             "sponsor_consent": self.sponsor_consent,
             **self.kwargs,
         }
+
+    @classmethod
+    def from_dict(cls, metadata_dict: dict) -> "Metadata":
+        """Deserialize the metadata from a dictionary."""
+        metadata_dict = metadata_dict.copy()
+        metadata_dict["pipeline_config"] = ImportConfig(
+            ocr_engine=metadata_dict["ocr_engine"],
+            model_type=metadata_dict["ocr_model_type"],
+            lang_hint=metadata_dict["ocr_lang_hint"],
+        )
+        del metadata_dict["ocr_engine"]
+        del metadata_dict["ocr_model_type"]
+        del metadata_dict["ocr_lang_hint"]
+        return cls(**metadata_dict)
