@@ -23,3 +23,19 @@ def test_metadata_to_dict():
         "sponsor_consent": metadata.sponsor_consent,
         **metadata.kwargs,
     }
+
+
+def test_metadata_from_dict():
+    config = ImportConfig(
+        ocr_engine="tesseract",
+        model_type="htr",
+        lang_hint="bo-x-ewts",
+    )
+    metadata = Metadata(
+        pipeline_config=config,
+        sponsor="BDRC",
+        sponsor_consent=True,
+    )
+    metadata_dict = metadata.to_dict()
+    metadata_from_dict = Metadata.from_dict(metadata_dict)
+    assert metadata_from_dict.to_dict() == metadata_dict

@@ -45,3 +45,17 @@ class Metadata:
             "sponsor_consent": self.sponsor_consent,
             **self.kwargs,
         }
+
+    @classmethod
+    def from_dict(cls, metadata_dict: dict) -> "Metadata":
+        """Deserialize the metadata from a dictionary."""
+        metadata_dict = metadata_dict.copy()
+        metadata_dict["pipeline_config"] = ImportConfig(
+            ocr_engine=metadata_dict["ocr_engine"],
+            model_type=metadata_dict["ocr_model_type"],
+            lang_hint=metadata_dict["ocr_lang_hint"],
+        )
+        del metadata_dict["ocr_engine"]
+        del metadata_dict["ocr_model_type"]
+        del metadata_dict["ocr_lang_hint"]
+        return cls(**metadata_dict)
