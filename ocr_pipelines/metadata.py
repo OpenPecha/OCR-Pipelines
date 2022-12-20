@@ -40,7 +40,7 @@ class Metadata:
             "ocr_engine": self.pipeline_config.ocr_engine,
             "ocr_model_type": self.pipeline_config.model_type,
             "ocr_lang_hint": self.pipeline_config.lang_hint,
-            "ocr_pipeline_version": self.pipeline_config.version,
+            "software_id": f"ocr-pipelines@v{self.pipeline_config.version}",
             "sponsor": self.sponsor,
             "sponsor_consent": self.sponsor_consent,
             **self.kwargs,
