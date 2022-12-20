@@ -45,23 +45,7 @@ class OCRParser:
         self.metadata = metadata
 
     def get_ocr_import_info(self):
-        return {
-            "bdrc_scan_id": self.ocr_output_path.name,
-            "source": "bdrc",
-            "imported_at": self.metadata.timestamp,
-            "ocr_info": {
-                "engine": self.metadata.pipeline_config.ocr_engine,
-                "model_type": self.metadata.pipeline_config.model_type,
-                "language_hint": self.metadata.pipeline_config.lang_hint,
-            },
-            "batch_id": self.metadata.batch_id,
-            "software_id": f"ocr-pipelines@v{self.metadata.pipeline_config.version}",
-            "expected_default_language": "",
-            "sponsor": {
-                "name": self.metadata.sponsor,
-                "consent": self.metadata.sponsor_consent,
-            },
-        }
+        return self.metadata.to_dict()
 
     def parse(self):
         try:

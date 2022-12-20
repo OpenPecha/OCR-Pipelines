@@ -51,23 +51,7 @@ def test_ocr_parser_get_ocr_import_info():
     ocr_import_info = parser.get_ocr_import_info()
 
     # assert
-    assert ocr_import_info == {
-        "bdrc_scan_id": "W00001",
-        "source": "bdrc",
-        "imported_at": metadata.timestamp,
-        "ocr_info": {
-            "engine": metadata.pipeline_config.ocr_engine,
-            "model_type": metadata.pipeline_config.model_type,
-            "language_hint": metadata.pipeline_config.lang_hint,
-        },
-        "batch_id": metadata.batch_id,
-        "software_id": f"ocr-pipelines@v{metadata.pipeline_config.version}",
-        "expected_default_language": "",
-        "sponsor": {
-            "name": "sponsor",
-            "consent": True,
-        },
-    }
+    assert ocr_import_info == metadata.to_dict()
 
 
 @pytest.fixture(scope="module")
