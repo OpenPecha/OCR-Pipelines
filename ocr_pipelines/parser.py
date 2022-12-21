@@ -75,4 +75,5 @@ class OCRParser:
             ocr_import_info=self.get_ocr_import_info(),
         )
         pecha.__class__ = OpenPechaGitRepo
+        pecha.storage = None
         return pecha
