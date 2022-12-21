@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Union
 
+from openpecha.core.pecha import OpenPechaGitRepo
 from openpecha.formatters.ocr.google_vision import (
     GoogleVisionBDRCFileProvider,
     GoogleVisionFormatter,
@@ -47,7 +48,7 @@ class OCRParser:
     def get_ocr_import_info(self):
         return self.metadata.to_dict()
 
-    def parse(self):
+    def parse(self) -> OpenPechaGitRepo:
         try:
             formatter_class = self.parsers_register[self.config.ocr_engine]
         except Exception:
@@ -73,4 +74,5 @@ class OCRParser:
             pecha_id=self.pecha_id,
             ocr_import_info=self.get_ocr_import_info(),
         )
+        pecha.__class__ = OpenPechaGitRepo
         return pecha
