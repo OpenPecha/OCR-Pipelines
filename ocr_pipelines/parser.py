@@ -34,6 +34,7 @@ class OCRParser:
         ocr_output_path: Path,
         output_path: Path,
         metadata: Metadata,
+        pecha_id: str = None,
         parsers_register: dict = PARSERS_REGISTER,
         data_provider_register: dict = DATA_PROVIDER_REGISTER,
     ) -> None:
@@ -43,7 +44,7 @@ class OCRParser:
         self.parsers_register = parsers_register
         self.data_provider_register = data_provider_register
         self.metadata = metadata
-        self.pecha_id = ids.get_initial_pecha_id()
+        self.pecha_id = pecha_id or ids.get_initial_pecha_id()
 
     @property
     def opf_path(self) -> Path:

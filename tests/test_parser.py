@@ -89,3 +89,4 @@ def test_ocr_parser_with_import_config(tmp_path, config_and_metadata):
 
     # assert
     assert isinstance(pecha, OpenPechaFS)
+    assert pecha.pecha_id == parser.pecha_id
