@@ -14,8 +14,7 @@ class MockOCRFormatter:
             setattr(self, key, value)
 
     def create_opf(self, *args, **kwargs):
-        pecha_path = self.output_path / "pecha"  # type: ignore
-        return OpenPechaFS(path=pecha_path)
+        return OpenPechaFS(path=self.output_path)  # type: ignore
 
 
 class MockDataProvider:
@@ -80,7 +79,7 @@ def test_ocr_parser_with_import_config(tmp_path, config_and_metadata):
         config=config,
         metadata=metadata,
         ocr_output_path=ocr_output_path,
-        output_path=tmp_path,
+        output_path=Path(tmp_path),
         parsers_register=parsers_register,
         data_provider_register=data_provider_register,
     )

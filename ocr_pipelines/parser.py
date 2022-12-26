@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Union
 
+from openpecha.core import ids
 from openpecha.core.pecha import OpenPechaGitRepo
 from openpecha.formatters.ocr.google_vision import (
     GoogleVisionBDRCFileProvider,
@@ -33,7 +34,6 @@ class OCRParser:
         ocr_output_path: Path,
         output_path: Path,
         metadata: Metadata,
-        pecha_id: str = None,
         parsers_register: dict = PARSERS_REGISTER,
         data_provider_register: dict = DATA_PROVIDER_REGISTER,
     ) -> None:
@@ -42,8 +42,14 @@ class OCRParser:
         self.output_path = output_path
         self.parsers_register = parsers_register
         self.data_provider_register = data_provider_register
-        self.pecha_id = pecha_id
         self.metadata = metadata
+        self.pecha_id = ids.get_initial_pecha_id()
+
+    @property
+    def opf_path(self) -> Path:
+        opf_path = self.output_path / self.pecha_id / f"{self.pecha_id}.opf"
+        opf_path.mkdir(parents=True, exist_ok=True)
+        return opf_path
 
     def get_ocr_import_info(self):
         return self.metadata.to_dict()
@@ -63,7 +69,7 @@ class OCRParser:
             )
 
         bdrc_scan_id = self.ocr_output_path.stem
-        formatter = formatter_class(output_path=self.output_path)
+        formatter = formatter_class(output_path=self.opf_path)
         data_provider = data_provider_class(
             bdrc_scan_id=bdrc_scan_id,
             ocr_import_info={},
@@ -76,4 +82,6 @@ class OCRParser:
         )
         pecha.__class__ = OpenPechaGitRepo
         pecha.storage = None
+        pecha.meta.id = self.pecha_id
+        pecha.save_meta()
         return pecha
