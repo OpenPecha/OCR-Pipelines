@@ -13,7 +13,13 @@ from ocr_pipelines.update_pecha import update_pecha
 from ocr_pipelines.upload import BdrcS3Uploader
 
 
-def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata) -> str:
+def get_pecha_url(pecha_id: str) -> str:
+    return f"https://github.com/OpenPecha-Data/{pecha_id}"
+
+
+def import_pipeline(
+    bdrc_scan_id: str, config: ImportConfig, metadata: Metadata
+) -> dict:
     """Pipeline for importing ocred pecha to opf
 
     Args:
@@ -21,7 +27,7 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata)
         config (ImportConfig): import config object
 
     Returns:
-        str: pecha id
+        dict: pecha id and pecha url
     """
 
     downloader = BDRCImageDownloader(
@@ -50,7 +56,14 @@ def import_pipeline(bdrc_scan_id: str, config: ImportConfig, metadata: Metadata)
 
         pecha.publish(asset_path=ocr_output_path, asset_name="ocr_output")
 
-        return pecha.pecha_id
+        pecha_url = get_pecha_url(pecha.pecha_id)
+
+        result = {
+            "pecha_id": pecha.pecha_id,
+            "pecha_url": pecha_url,
+        }
+
+        return result
 
 
 def reimport_pipeline(pecha_id: str, config: ReimportConfig, metadata: Metadata):
