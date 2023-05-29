@@ -3,6 +3,7 @@ import io
 import json
 import logging
 from pathlib import Path
+from openpecha.buda.api import image_group_to_folder_name
 
 from ocr_pipelines.config import ImportConfig
 from ocr_pipelines.engines import register as ocr_engine_class_register
@@ -59,10 +60,11 @@ class OCRExecutor:
         img_group_paths.sort()
         for img_group_path in img_group_paths:
             img_group_id = img_group_path.name
+            img_grp_folder_name = image_group_to_folder_name(bdrc_scan_id, img_group_id)
             ocr_output_dir = (
                 self.config.ocr_outputs_path
                 / bdrc_scan_id
-                / f"{bdrc_scan_id}-{img_group_id}"
+                / img_grp_folder_name
             )
             ocr_output_dir.mkdir(exist_ok=True, parents=True)
             img_paths = list(img_group_path.iterdir())
