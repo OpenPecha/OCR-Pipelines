@@ -124,17 +124,25 @@ def test_service_dir():
 
 
 def test_batch_dir():
+    import uuid
+
+    def mock_get_available_batch_id(*args, **kwargs):
+        return f"batch-{uuid.uuid4().hex[:4]}"
+
     # arrange
     bdrc_scan_id = "W1KG12345"
     service = "google-vision"
     uploader = BdrcS3Uploader(bdrc_scan_id, service)
-    uploader._batch = "batch-1"
+    uploader._BdrcS3Uploader__get_available_batch_id = mock_get_available_batch_id  # type: ignore
+    batch_id = uploader.batch
 
     # act
     batch_dir = uploader.batch_dir
 
     # assert
-    assert batch_dir == Path("Works/67/W1KG12345/google-vision/batch-1")
+    assert uploader.batch == batch_id
+    assert uploader.batch == batch_id
+    assert batch_dir == Path("Works/67/W1KG12345/google-vision/") / batch_id
 
 
 def test_imagegroup_dir():

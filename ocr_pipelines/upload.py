@@ -30,7 +30,9 @@ class BdrcS3Uploader:
 
     @property
     def batch(self) -> str:
-        return self._batch or self.__get_available_batch_id()
+        if not self._batch:
+            self._batch = self.__get_available_batch_id()
+        return self._batch
 
     def __s3_dir_exists(self, path: Path) -> bool:
         """Check if a key exists in s3
@@ -107,7 +109,7 @@ class BdrcS3Uploader:
             metadata (dict): metadata to add
         """
 
-        metadata_path = self.base_dir / "info.json"
+        metadata_path = self.batch_dir / "info.json"
         metadata_bytes = bytes(json.dumps(metadata), "utf-8")
         self.bucket.put_object(Key=str(metadata_path), Body=metadata_bytes)
 
