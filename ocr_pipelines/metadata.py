@@ -37,6 +37,7 @@ class Metadata:
     def to_dict(self):
         return {
             "timestamp": self.timestamp,
+            "batch_id": self.batch_id,
             "ocr_engine": self.pipeline_config.ocr_engine,
             "ocr_model_type": self.pipeline_config.model_type,
             "ocr_lang_hint": self.pipeline_config.lang_hint,

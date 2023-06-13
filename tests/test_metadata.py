@@ -12,9 +12,11 @@ def test_metadata_to_dict():
         pipeline_config=config,
         sponsor="BDRC",
         sponsor_consent=True,
+        batch_id="fake-batch-id",
     )
     assert metadata.to_dict() == {
         "timestamp": metadata.timestamp,
+        "batch_id": metadata.batch_id,
         "ocr_engine": config.ocr_engine,
         "ocr_model_type": config.model_type,
         "ocr_lang_hint": config.lang_hint,
